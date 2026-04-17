@@ -849,14 +849,24 @@ function stopCam(){
   if(!qrVerified) setScanSt('📷 카메라 버튼을 눌러 스캔하세요','');
 }
 
+let scanCount=0;
 function scanFrame(){
+  scanCount++;
   const v=document.getElementById('preview');
-  if(!v||v.readyState!==v.HAVE_ENOUGH_DATA) return;
+  if(!v){setScanSt('❌ video 요소 없음','err');return;}
+  if(typeof jsQR==='undefined'){setScanSt('❌ jsQR 라이브러리 로드 실패','err');return;}
+  if(!v.videoWidth||!v.videoHeight){setScanSt(`비디오 대기중... (${scanCount})`,'');return;}
   const c=document.createElement('canvas');
   c.width=v.videoWidth; c.height=v.videoHeight;
-  c.getContext('2d').drawImage(v,0,0);
-  const img=c.getContext('2d').getImageData(0,0,c.width,c.height);
+  try{
+    c.getContext('2d').drawImage(v,0,0);
+  } catch(e){setScanSt('❌ drawImage 실패: '+e.message,'err');return;}
+  let img;
+  try{
+    img=c.getContext('2d').getImageData(0,0,c.width,c.height);
+  } catch(e){setScanSt('❌ getImageData 실패','err');return;}
   const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
+  if(scanCount%10===0 && !code) setScanSt(`스캔 중... ${c.width}x${c.height} (${scanCount}회)`,'');
   if(code){
     const expected=makeToken(curRole);
     if(code.data===expected){
