@@ -521,10 +521,14 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
           <button class="btn btn-ac" style="flex:1;padding:10px;" onclick="saveSheetUrl()">저장 및 테스트</button>
           <button class="btn btn-gh" style="flex:1;padding:10px;" onclick="showGuide()">📖 설정 방법</button>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--sf2);padding:10px 12px;border-radius:10px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--sf2);padding:10px 12px;border-radius:10px;margin-bottom:10px;">
           <input type="checkbox" id="autoSync" onchange="toggleAutoSync()" style="width:16px;height:16px;cursor:pointer;">
           <span style="font-size:12px;line-height:1.4;"><b>자동 싱크</b> — 관리자 로그인 시 시트에서 최신 명단 자동 불러오기</span>
         </label>
+        <button class="btn btn-ink btn-full" onclick="copyShareLink()">🔗 공유 링크 복사</button>
+        <div style="font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px;">
+          운영요원/직원에게 이 링크를 보내면 <b>기기별 시트 설정 없이 바로 출퇴근 가능</b>합니다.
+        </div>
       </div>
 
       <div class="div"></div>
@@ -609,6 +613,21 @@ let S = JSON.parse(localStorage.getItem('evt_v3') || 'null') || {
     staffWorkStart: '09:00', staffWorkEnd: '18:00'
   }
 };
+
+// URL 파라미터에 시트 URL 있으면 자동 주입 (공유 링크 지원)
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const s=params.get('s');
+  if(s){
+    try{
+      const decoded=decodeURIComponent(s);
+      if(decoded.startsWith('https://script.google.com/')){
+        S.sheetUrl=decoded;
+        localStorage.setItem('evt_v3', JSON.stringify(S));
+      }
+    } catch(e){}
+  }
+})();
 
 // 마이그레이션: 기존 이름 문자열 배열 → 객체 배열
 function migrateState(){
@@ -1502,6 +1521,16 @@ function toggleAutoSync(){
   toast(S.autoSync?'자동 싱크 ON ☁️':'자동 싱크 OFF','ok');
 }
 
+function copyShareLink(){
+  if(!S.sheetUrl){toast('먼저 Apps Script URL을 저장하세요','err');return;}
+  const url=window.location.origin+window.location.pathname+'?s='+encodeURIComponent(S.sheetUrl);
+  navigator.clipboard.writeText(url).then(()=>{
+    toast('공유 링크 복사됨 🔗','ok');
+  }).catch(()=>{
+    prompt('아래 링크를 복사해서 공유하세요:', url);
+  });
+}
+
 function saveEvent(){
   S.event.name=document.getElementById('evNameInput').value.trim();
   S.event.start=document.getElementById('evStart').value;
@@ -1725,6 +1754,11 @@ function toast(msg,cls='ok'){
 // ════════════════════════════════════════
 setRole('alba');
 updateAdminSub();
+
+// 공유 링크로 접속한 경우: 시트 자동 로드
+if(S.sheetUrl && S.autoSync!==false){
+  loadFromSheets().catch(()=>{});
+}
 </script>
 </body>
 </html>
