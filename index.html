@@ -224,7 +224,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 <body>
 
 <!-- ══════════════════════════════
-     알바생 / 직원 출퇴근 화면
+     운영요원 / 직원 출퇴근 화면
 ══════════════════════════════ -->
 <div id="screen-worker" class="screen active">
   <nav class="nav">
@@ -239,7 +239,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="ct-e" id="evName">-</div>
     </div>
     <div class="role-sw">
-      <button class="role-btn ra" id="roleAlba" onclick="setRole('alba')">🙋 알바생</button>
+      <button class="role-btn ra" id="roleAlba" onclick="setRole('alba')">🙋 운영요원</button>
       <button class="role-btn" id="roleStaff" onclick="setRole('staff')">👔 직원</button>
     </div>
 
@@ -247,7 +247,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
     <div class="sc" id="s1">
       <div class="sn a" id="s1n">1</div>
       <div class="stitle" id="s1title">QR 스캔</div>
-      <div class="sdesc" id="s1desc">알바생/직원 QR이 따로 있어요. 관리자 화면에서 맞는 QR을 보여달라고 하세요.</div>
+      <div class="sdesc" id="s1desc">운영요원/직원 QR이 따로 있어요. 관리자 화면에서 맞는 QR을 보여달라고 하세요.</div>
       <div class="scan-wrap" id="scanWrap" style="display:none">
         <video id="preview" autoplay playsinline muted></video>
         <div class="sov"><div class="sfr" id="scanFrame"></div><div class="sln" id="scanLine"></div></div>
@@ -272,8 +272,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="sn a" id="s3n">3</div>
       <div class="stitle">출근 / 퇴근</div>
       <div class="ar">
-        <button class="btn btn-in" id="btnIn" onclick="doIn()" disabled>✅ 출근</button>
-        <button class="btn btn-out" id="btnOut" onclick="doOut()" disabled>🚪 퇴근</button>
+        <button class="btn btn-in" id="btnIn" onclick="tryAction('in')" disabled>✅ 출근</button>
+        <button class="btn btn-out" id="btnOut" onclick="tryAction('out')" disabled>🚪 퇴근</button>
       </div>
       <div id="selInfo" style="font-size:11px;color:var(--mu);text-align:center;margin-top:10px;min-height:16px;"></div>
     </div>
@@ -319,15 +319,15 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
     <!-- QR 탭 -->
     <div id="ap-qr" class="ap active">
       <div class="qr-tabs">
-        <button class="qt qa" id="qtAlba" onclick="showQR('alba')">🙋 알바생 QR</button>
+        <button class="qt qa" id="qtAlba" onclick="showQR('alba')">🙋 운영요원 QR</button>
         <button class="qt" id="qtStaff" onclick="showQR('staff')">👔 직원 QR</button>
       </div>
       <div class="qw qwa" id="qwAlba">
-        <div class="qbadge ba">알바생 전용</div>
+        <div class="qbadge ba">운영요원 전용</div>
         <div class="qtok ta" id="tokAlba">-</div>
         <div class="qbox" id="qboxAlba"></div>
         <div class="qcd" id="qcdAlba"></div>
-        <div class="qhint">🙋 알바생 화면에서 <b>알바생</b> 선택 후 이 QR을 스캔하면 됩니다.</div>
+        <div class="qhint">🙋 운영요원 화면에서 <b>운영요원</b> 선택 후 이 QR을 스캔하면 됩니다.</div>
       </div>
       <div class="qw qws" id="qwStaff" style="display:none">
         <div class="qbadge bs">직원 전용</div>
@@ -350,7 +350,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="syncbar"><div class="sdot no" id="syncDot"></div><span id="syncMsg">Google Sheets 미연결</span></div>
       <div class="frow">
         <select class="fsel" id="filterType" onchange="renderRecords()">
-          <option value="">전체</option><option value="alba">알바생</option><option value="staff">직원</option>
+          <option value="">전체</option><option value="alba">운영요원</option><option value="staff">직원</option>
         </select>
         <select class="fsel" id="filterName" onchange="renderRecords()"><option value="">전체 인원</option></select>
         <input type="date" class="finp" id="filterDate" onchange="renderRecords()">
@@ -398,7 +398,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
           <div class="sl">매칭 결과</div>
           <div class="match-preview" id="matchList"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-            <button class="btn btn-ac" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('alba')">🙋 알바생 지급표 xlsx</button>
+            <button class="btn btn-ac" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('alba')">🙋 운영요원 지급표 xlsx</button>
             <button class="btn btn-bl" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('staff')">👔 직원 지급표 xlsx</button>
           </div>
         </div>
@@ -411,7 +411,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="sbox">
         <div class="sbox-t">📂 마스터 엑셀 업로드</div>
         <div style="font-size:11px;color:var(--mu);line-height:1.6;margin-bottom:10px;">
-          알바생/직원 2개 시트가 있는 엑셀 파일을 올리면 명단 + 급여 + 개인정보가 한번에 세팅됩니다.
+          운영요원/직원 2개 시트가 있는 엑셀 파일을 올리면 명단 + 급여 + 개인정보가 한번에 세팅됩니다.
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
           <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="downloadMasterTemplate()">📄 양식 다운로드</button>
@@ -422,8 +422,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
         </div>
       </div>
 
-      <!-- 알바생 -->
-      <div class="sl">알바생 추가</div>
+      <!-- 운영요원 -->
+      <div class="sl">운영요원 추가</div>
       <div class="sbox" style="padding:14px;">
         <input type="text" class="inp" id="newAlbaName" placeholder="이름" style="margin-bottom:8px;">
         <div class="fr" style="margin-bottom:8px;">
@@ -433,7 +433,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
           </select>
           <input type="number" class="inp" id="newAlbaRate" placeholder="11000" style="flex:2">
         </div>
-        <div style="font-size:10px;color:var(--mu);margin-bottom:10px;"><span id="newAlbaRateLabel">시급</span> 원 단위 입력 (미입력 시 기본값 11,000원)</div>
+        <div style="font-size:10px;color:var(--mu);margin-bottom:8px;"><span id="newAlbaRateLabel">시급</span> 원 단위 입력 (미입력 시 기본값 11,000원)</div>
+        <input type="tel" maxlength="4" inputmode="numeric" class="inp" id="newAlbaPhone4" placeholder="전화번호 뒷자리 4자리 (선택)" style="margin-bottom:8px;">
         <button class="btn btn-ac btn-full" onclick="addPerson('alba')">추가</button>
       </div>
       <div id="albaList" style="margin-top:10px;"></div>
@@ -452,7 +453,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
           <input type="number" class="inp" id="newStaffRate" placeholder="평일 시급 / 일급" style="flex:1">
           <input type="number" class="inp" id="newStaffWeRate" placeholder="주말 (선택)" style="flex:1">
         </div>
-        <div style="font-size:10px;color:var(--mu);margin-bottom:10px;">주말 시급은 평일과 다를 때만 입력. 일급이어도 주말 금액 다르면 입력 가능.</div>
+        <div style="font-size:10px;color:var(--mu);margin-bottom:8px;">주말 시급은 평일과 다를 때만 입력. 일급이어도 주말 금액 다르면 입력 가능.</div>
+        <input type="tel" maxlength="4" inputmode="numeric" class="inp" id="newStaffPhone4" placeholder="전화번호 뒷자리 4자리 (선택)" style="margin-bottom:8px;">
         <button class="btn btn-bl btn-full" onclick="addPerson('staff')">추가</button>
       </div>
       <div id="staffList" style="margin-top:10px;"></div>
@@ -477,9 +479,9 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
         <button class="btn btn-ink btn-full" style="margin-top:12px;" onclick="saveEvent()">저장</button>
       </div>
 
-      <!-- 알바생 급여 설정 -->
+      <!-- 운영요원 급여 설정 -->
       <div class="sbox">
-        <div class="sbox-t">🙋 알바생 급여 설정</div>
+        <div class="sbox-t">🙋 운영요원 급여 설정</div>
         <div class="rate-g">
           <div class="fg"><label class="fl">시급 (원)</label><input type="number" class="inp" id="albaRate" placeholder="11000"></div>
           <div class="fg"><label class="fl">기본 근무시간 (h)</label><input type="number" class="inp" id="albaBase" placeholder="8"></div>
@@ -557,6 +559,19 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
   </div>
 </div>
 
+<!-- PIN 인증 모달 -->
+<div id="pinModal" style="display:none;position:fixed;inset:0;background:rgba(10,10,31,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:700;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:24px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(67,56,202,0.2);">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--ac);letter-spacing:.06em;margin-bottom:4px;">본인 확인</div>
+    <div style="font-size:12px;color:var(--mu);margin-bottom:18px;"><b id="pinName"></b>님, 전화번호 뒷자리 4자리를 입력하세요</div>
+    <input type="tel" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" id="pinInput" class="linp" placeholder="••••" onkeydown="if(event.key==='Enter')verifyPin();" style="margin-bottom:14px;">
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-gh" style="flex:1;" onclick="closePinModal()">취소</button>
+      <button class="btn btn-ac" style="flex:1;" onclick="verifyPin()">확인</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -621,7 +636,7 @@ function tick(){
 tick(); setInterval(tick,1000);
 
 // ════════════════════════════════════════
-//  TOKENS (알바생/직원 별도)
+//  TOKENS (운영요원/직원 별도)
 // ════════════════════════════════════════
 function makeToken(role){
   const d=new Date();
@@ -753,9 +768,9 @@ function setRole(r){
   document.getElementById('btnIn').className='btn '+(r==='alba'?'btn-in':'btn-in');
   document.getElementById('scanFrame').className='sfr'+(r==='staff'?' sf-s':'');
   document.getElementById('scanLine').className='sln'+(r==='staff'?' sl-s':'');
-  document.getElementById('s1title').textContent=r==='alba'?'알바생 QR 스캔':'직원 QR 스캔';
+  document.getElementById('s1title').textContent=r==='alba'?'운영요원 QR 스캔':'직원 QR 스캔';
   document.getElementById('s1desc').textContent=r==='alba'
-    ?'관리자 화면 QR 탭 → 알바생 QR을 보여달라고 하세요.'
+    ?'관리자 화면 QR 탭 → 운영요원 QR을 보여달라고 하세요.'
     :'관리자 화면 QR 탭 → 직원 QR을 보여달라고 하세요.';
   document.getElementById('s2').classList.add('locked');
   document.getElementById('s3').classList.add('locked');
@@ -804,7 +819,7 @@ function scanFrame(){
       document.getElementById('s2').classList.remove('locked');
       renderNameGrid();
     } else if(code.data.startsWith('AL-')||code.data.startsWith('ST-')){
-      setScanSt(`❌ ${curRole==='alba'?'알바생':'직원'} QR을 스캔하세요`,'err');
+      setScanSt(`❌ ${curRole==='alba'?'운영요원':'직원'} QR을 스캔하세요`,'err');
     } else {
       setScanSt('❌ 유효하지 않은 QR입니다','err');
     }
@@ -829,7 +844,7 @@ function renderNameGrid(){
   const g=document.getElementById('nameGrid'); g.innerHTML='';
   const list=personList(curRole);
   if(!list.length){
-    g.innerHTML=`<div style="grid-column:1/-1;font-size:12px;color:var(--mu);padding:10px 0;">등록된 ${curRole==='alba'?'알바생':'직원'}이 없습니다</div>`;
+    g.innerHTML=`<div style="grid-column:1/-1;font-size:12px;color:var(--mu);padding:10px 0;">등록된 ${curRole==='alba'?'운영요원':'직원'}이 없습니다</div>`;
     return;
   }
   list.forEach(p=>{
@@ -858,6 +873,42 @@ function updateActions(){
 }
 
 function nowTime(){ return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+
+// PIN 인증 (전화번호 뒷자리 4자리)
+let pendingAction=null;
+function tryAction(action){
+  if(!selName||!qrVerified) return;
+  const person=findPerson(curRole,selName);
+  // phone4가 없으면 바로 진행 (엑셀 업로드 안 한 경우 구 호환)
+  if(!person||!person.phone4){
+    if(action==='in') doIn(); else doOut();
+    return;
+  }
+  pendingAction=action;
+  document.getElementById('pinName').textContent=selName;
+  document.getElementById('pinInput').value='';
+  document.getElementById('pinModal').style.display='flex';
+  setTimeout(()=>document.getElementById('pinInput').focus(),100);
+}
+function verifyPin(){
+  const person=findPerson(curRole,selName);
+  const input=document.getElementById('pinInput').value.trim();
+  if(input.length!==4||!/^\d{4}$/.test(input)){
+    toast('4자리 숫자를 입력하세요','err');
+    return;
+  }
+  if(input===person.phone4){
+    closePinModal();
+    if(pendingAction==='in') doIn(); else doOut();
+  } else {
+    toast('전화번호 뒷자리가 일치하지 않습니다','err');
+    document.getElementById('pinInput').value='';
+  }
+}
+function closePinModal(){
+  document.getElementById('pinModal').style.display='none';
+  pendingAction=null;
+}
 
 function doIn(){
   if(!selName||!qrVerified) return;
@@ -1025,7 +1076,7 @@ function renderToday(){
   const albaIn=recs.filter(r=>r.role==='alba'&&r.checkIn&&!r.checkOut).length;
   const staffIn=recs.filter(r=>r.role==='staff'&&r.checkIn&&!r.checkOut).length;
   document.getElementById('todayStats').innerHTML=`
-    <div class="scard"><div class="sv">${albaIn}</div><div class="slbl">알바생 근무중</div></div>
+    <div class="scard"><div class="sv">${albaIn}</div><div class="slbl">운영요원 근무중</div></div>
     <div class="scard"><div class="sv">${staffIn}</div><div class="slbl">직원 근무중</div></div>
     <div class="scard"><div class="sv">${S.alba.length+S.staff.length}</div><div class="slbl">총 인원</div></div>
     <div class="scard"><div class="sv">${S.alba.length+S.staff.length-recs.filter(r=>r.checkIn).length}</div><div class="slbl">미출근</div></div>
@@ -1038,7 +1089,7 @@ function renderToday(){
     const st=!rec?`<span class="badge b-abs">미출근</span>`
       :!rec.checkOut?`<span class="badge b-in">근무중</span>`
       :`<span class="badge b-out">퇴근</span>`;
-    const roleTag=role==='alba'?`<span class="badge b-a">알바</span>`:`<span class="badge b-s">직원</span>`;
+    const roleTag=role==='alba'?`<span class="badge b-a">운영</span>`:`<span class="badge b-s">직원</span>`;
     return `<div class="ri">
       <div class="rt">
         <div><div style="display:flex;align-items:center;gap:6px;">${roleTag}<span class="rn">${n}</span>${st}</div></div>
@@ -1072,7 +1123,7 @@ function renderRecords(){
   list.innerHTML=recs.map(r=>{
     const st=!r.checkIn?`<span class="badge b-abs">미출근</span>`
       :!r.checkOut?`<span class="badge b-in">근무중</span>`:`<span class="badge b-out">퇴근</span>`;
-    const roleTag=r.role==='alba'?`<span class="badge b-a">알바</span>`:`<span class="badge b-s">직원</span>`;
+    const roleTag=r.role==='alba'?`<span class="badge b-a">운영</span>`:`<span class="badge b-s">직원</span>`;
     return `<div class="ri">
       <div class="rt">
         <div>${roleTag}<span class="rn" style="margin-left:5px;">${r.name}</span> ${st}
@@ -1106,7 +1157,7 @@ function renderPay(){
     const recs=S.records.filter(r=>r.name===n&&r.role===role&&r.checkOut);
     const payType=person.payType||'hourly';
     const typeTag=payType==='daily'?'<span class="tag tn">일급</span>':'<span class="tag tw">시급</span>';
-    if(!recs.length) return `<div class="ri"><div class="rt"><div style="display:flex;align-items:center;gap:6px;"><span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span><span class="rn">${n}</span>${typeTag}<span class="badge b-abs">기록없음</span></div></div></div>`;
+    if(!recs.length) return `<div class="ri"><div class="rt"><div style="display:flex;align-items:center;gap:6px;"><span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'운영':'직원'}</span><span class="rn">${n}</span>${typeTag}<span class="badge b-abs">기록없음</span></div></div></div>`;
     const pay=role==='alba'?calcAlbaPay(recs,person):calcStaffPay(recs,person);
     const days=[...new Set(recs.map(r=>r.date))].length;
     const totalMins=recs.reduce((s,r)=>s+durMins(r.checkIn,r.checkOut),0);
@@ -1114,7 +1165,7 @@ function renderPay(){
     return `<div class="ri">
       <div class="rt">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span>
+          <span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'운영':'직원'}</span>
           <span class="rn">${n}</span>
           ${typeTag}
         </div>
@@ -1163,7 +1214,7 @@ function showMatchPreview(){
   let html='';
   allPeople.forEach(({n,role})=>{
     const found=personalData.find(p=>p.name===n);
-    const roleTag=`<span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span>`;
+    const roleTag=`<span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'운영':'직원'}</span>`;
     html+=`<div class="match-row">
       <span>${roleTag} ${n}</span>
       ${found?`<span class="match-ok">✅ 매칭됨</span>`:`<span class="match-fail">❌ 개인정보 없음</span>`}
@@ -1193,7 +1244,7 @@ function exportPayrollXlsx(role){
   const allDates=[...new Set(S.records.filter(r=>r.role===role).map(r=>r.date))].sort();
 
   const aoa=[];
-  aoa.push([`${eventName} ${role==='alba'?'알바생':'직원'} 급여 지급표`]);
+  aoa.push([`${eventName} ${role==='alba'?'운영요원':'직원'} 급여 지급표`]);
   aoa.push([`추출일: ${today}`]);
   aoa.push([]);
 
@@ -1247,9 +1298,9 @@ function exportPayrollXlsx(role){
   ws['!cols']=colW.map(w=>({wch:w}));
   ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:header.length-1}}];
 
-  XLSX.utils.book_append_sheet(wb,ws,role==='alba'?'알바생 지급표':'직원 지급표');
-  XLSX.writeFile(wb,`${eventName}_${role==='alba'?'알바생':'직원'}_지급표_${today}.xlsx`);
-  toast(`${role==='alba'?'알바생':'직원'} 지급표 저장됨 📥`,'ok');
+  XLSX.utils.book_append_sheet(wb,ws,role==='alba'?'운영요원 지급표':'직원 지급표');
+  XLSX.writeFile(wb,`${eventName}_${role==='alba'?'운영요원':'직원'}_지급표_${today}.xlsx`);
+  toast(`${role==='alba'?'운영요원':'직원'} 지급표 저장됨 📥`,'ok');
   personalData=[];
   document.getElementById('matchPreview').style.display='none';
   document.getElementById('personalFile').value='';
@@ -1274,10 +1325,11 @@ function renderStaffLists(){
     list.innerHTML=arr.map((p,i)=>{
       const name=personName(p);
       const rate=typeof p==='object'?formatRate(p):'-';
+      const phone=typeof p==='object'&&p.phone4?` · 📱 ****${p.phone4}`:'';
       return `<div class="si">
         <div style="flex:1;min-width:0;">
           <div style="font-weight:600;font-size:13px;">👤 ${name}</div>
-          <div style="font-size:11px;color:var(--mu);margin-top:2px;">${rate}</div>
+          <div style="font-size:11px;color:var(--mu);margin-top:2px;">${rate}${phone}</div>
         </div>
         <div style="display:flex;gap:6px;">
           <button class="bdel" style="border-color:var(--bd);color:var(--mu);" onclick="editPerson('${role}',${i})">편집</button>
@@ -1299,9 +1351,13 @@ function addPerson(role){
     if(S.alba.some(p=>personName(p)===name)){toast('이미 등록된 이름입니다','err');return;}
     const payType=document.getElementById('newAlbaType').value;
     const rate=parseInt(document.getElementById('newAlbaRate').value)||S.pay.albaRate||11000;
-    S.alba.push({name,payType,rate});
+    const p4=document.getElementById('newAlbaPhone4').value.replace(/[^0-9]/g,'').slice(-4);
+    const entry={name,payType,rate};
+    if(p4.length===4) entry.phone4=p4;
+    S.alba.push(entry);
     document.getElementById('newAlbaName').value='';
     document.getElementById('newAlbaRate').value='';
+    document.getElementById('newAlbaPhone4').value='';
   } else {
     const name=document.getElementById('newStaffName').value.trim();
     if(!name){toast('이름을 입력하세요','err');return;}
@@ -1309,12 +1365,15 @@ function addPerson(role){
     const payType=document.getElementById('newStaffType').value;
     const rate=parseInt(document.getElementById('newStaffRate').value)||S.pay.staffWeekday||15000;
     const weRaw=document.getElementById('newStaffWeRate').value;
+    const p4=document.getElementById('newStaffPhone4').value.replace(/[^0-9]/g,'').slice(-4);
     const obj={name,payType,rate};
     if(weRaw){obj.weekendRate=parseInt(weRaw);}
+    if(p4.length===4) obj.phone4=p4;
     S.staff.push(obj);
     document.getElementById('newStaffName').value='';
     document.getElementById('newStaffRate').value='';
     document.getElementById('newStaffWeRate').value='';
+    document.getElementById('newStaffPhone4').value='';
   }
   save(); renderStaffLists(); renderNameGrid();
   syncPersonToSheet(role,'add');
@@ -1338,6 +1397,13 @@ function editPerson(role,i){
     if(newWe===null) return;
     if(newWe.trim()===''){delete p.weekendRate;}
     else {const n=parseInt(newWe); if(!isNaN(n)) p.weekendRate=n;}
+  }
+  const curP4=p.phone4||'';
+  const newP4=prompt(`전화번호 뒷자리 4자리 (PIN 인증용, 비우면 삭제):`, curP4);
+  if(newP4!==null){
+    const clean=newP4.replace(/[^0-9]/g,'').slice(-4);
+    if(clean.length===4) p.phone4=clean;
+    else if(newP4.trim()==='') delete p.phone4;
   }
   save(); renderStaffLists();
   syncPersonToSheet(role,'update');
@@ -1475,7 +1541,7 @@ function downloadMasterTemplate(){
     ['이일당','일급',100000,'','','','']
   ]);
   albaWs['!cols']=[{wch:10},{wch:10},{wch:12},{wch:16},{wch:16},{wch:10},{wch:22}];
-  XLSX.utils.book_append_sheet(wb,albaWs,'알바생');
+  XLSX.utils.book_append_sheet(wb,albaWs,'운영요원');
 
   const staffWs=XLSX.utils.aoa_to_sheet([
     ['이름','급여타입','평일시급/일급','주말시급','전화번호','주민번호','은행명','계좌번호'],
@@ -1498,8 +1564,13 @@ function handleMasterUpload(e){
     const newStaff=[];
     const newPersonal=[];
 
-    // 알바생 시트
-    const albaSheet=wb.Sheets['알바생'];
+    function extractPhone4(raw){
+      const d=String(raw||'').replace(/[^0-9]/g,'');
+      return d.length>=4 ? d.slice(-4) : '';
+    }
+
+    // 운영요원 시트
+    const albaSheet=wb.Sheets['운영요원'];
     if(albaSheet){
       const rows=XLSX.utils.sheet_to_json(albaSheet,{header:1});
       rows.slice(1).forEach(r=>{
@@ -1507,8 +1578,12 @@ function handleMasterUpload(e){
         const name=String(r[0]).trim();
         const payType=String(r[1]||'시급').includes('일')?'daily':'hourly';
         const rate=parseInt(r[2])||S.pay.albaRate||11000;
-        newAlba.push({name,payType,rate});
-        newPersonal.push({name,phone:String(r[3]||''),ssn:String(r[4]||''),bank:String(r[5]||''),account:String(r[6]||'')});
+        const phone=String(r[3]||'');
+        const entry={name,payType,rate};
+        const p4=extractPhone4(phone);
+        if(p4) entry.phone4=p4;
+        newAlba.push(entry);
+        newPersonal.push({name,phone,ssn:String(r[4]||''),bank:String(r[5]||''),account:String(r[6]||'')});
       });
     }
 
@@ -1521,15 +1596,18 @@ function handleMasterUpload(e){
         const name=String(r[0]).trim();
         const payType=String(r[1]||'시급').includes('일')?'daily':'hourly';
         const rate=parseInt(r[2])||S.pay.staffWeekday||15000;
+        const phone=String(r[4]||'');
         const obj={name,payType,rate};
         if(r[3]) obj.weekendRate=parseInt(r[3]);
+        const p4=extractPhone4(phone);
+        if(p4) obj.phone4=p4;
         newStaff.push(obj);
-        newPersonal.push({name,phone:String(r[4]||''),ssn:String(r[5]||''),bank:String(r[6]||''),account:String(r[7]||'')});
+        newPersonal.push({name,phone,ssn:String(r[5]||''),bank:String(r[6]||''),account:String(r[7]||'')});
       });
     }
 
     if(!newAlba.length && !newStaff.length){
-      toast('알바생/직원 시트를 찾지 못했습니다','err');
+      toast('운영요원/직원 시트를 찾지 못했습니다','err');
       return;
     }
 
@@ -1540,7 +1618,7 @@ function handleMasterUpload(e){
     renderStaffLists();
     renderNameGrid();
     syncPersonToSheet('','full');
-    toast(`알바생 ${newAlba.length}명, 직원 ${newStaff.length}명 로드 완료 ✅`,'ok');
+    toast(`운영요원 ${newAlba.length}명, 직원 ${newStaff.length}명 로드 완료 ✅`,'ok');
     e.target.value='';
   };
   reader.readAsArrayBuffer(file);
@@ -1559,7 +1637,7 @@ async function syncSheets(){
 function exportCSV(){
   if(!S.records.length){toast('내보낼 데이터가 없습니다','err');return;}
   const rows=[['역할','행사','이름','날짜','출근','퇴근','근무시간']];
-  S.records.forEach(r=>rows.push([r.role==='alba'?'알바생':'직원',r.event||'',r.name,r.date,r.checkIn||'',r.checkOut||'',calcDur(r.checkIn,r.checkOut)]));
+  S.records.forEach(r=>rows.push([r.role==='alba'?'운영요원':'직원',r.event||'',r.name,r.date,r.checkIn||'',r.checkOut||'',calcDur(r.checkIn,r.checkOut)]));
   const bom='\uFEFF';
   const csv=bom+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
   const a=document.createElement('a');
@@ -1577,10 +1655,10 @@ function showGuide(){
   ${[
     ['STEP 1','구글 시트 사본 만들기','구글 드라이브에서 템플릿 시트를 열고 <b>파일 → 사본 만들기</b>로 복사하세요. 행사마다 반복합니다.'],
     ['STEP 2','Apps Script 열기','복사한 시트에서 <b>확장 프로그램 → Apps Script</b>를 클릭하세요.'],
-    ['STEP 3','코드 붙여넣기','기존 코드를 지우고 아래 코드를 붙여넣고 저장하세요.<div style="background:#000;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:#f7c94b;line-height:1.7;margin-top:8px;overflow-x:auto;">function doGet(e){const a=e.parameter.action;if(a==="ping")return ok({status:"ok"});if(a==="getStaff"){const ss=SpreadsheetApp.getActiveSpreadsheet();const alba=ss.getSheetByName("알바생").getDataRange().getValues().slice(1).map(r=>r[0]).filter(Boolean);const staff=ss.getSheetByName("직원").getDataRange().getValues().slice(1).map(r=>r[0]).filter(Boolean);return ok({alba,staff});}return ok({});}<br>function doPost(e){const b=JSON.parse(e.postData.contents);const s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName("기록");if(b.action==="syncRecords"){s.clearContents();s.appendRow(["역할","이름","날짜","출근","퇴근","행사"]);b.records.forEach(r=>s.appendRow([r.role,r.name,r.date,r.checkIn||"",r.checkOut||"",r.event||""]));return ok({status:"ok"});}return ok({});}<br>function ok(d){return ContentService.createTextOutput(JSON.stringify(d)).setMimeType(ContentService.MimeType.JSON);}</div>'],
+    ['STEP 3','코드 붙여넣기','기존 코드를 지우고 아래 코드를 붙여넣고 저장하세요.<div style="background:#000;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:#f7c94b;line-height:1.7;margin-top:8px;overflow-x:auto;">function doGet(e){const a=e.parameter.action;if(a==="ping")return ok({status:"ok"});if(a==="getStaff"){const ss=SpreadsheetApp.getActiveSpreadsheet();const alba=ss.getSheetByName("운영요원").getDataRange().getValues().slice(1).map(r=>r[0]).filter(Boolean);const staff=ss.getSheetByName("직원").getDataRange().getValues().slice(1).map(r=>r[0]).filter(Boolean);return ok({alba,staff});}return ok({});}<br>function doPost(e){const b=JSON.parse(e.postData.contents);const s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName("기록");if(b.action==="syncRecords"){s.clearContents();s.appendRow(["역할","이름","날짜","출근","퇴근","행사"]);b.records.forEach(r=>s.appendRow([r.role,r.name,r.date,r.checkIn||"",r.checkOut||"",r.event||""]));return ok({status:"ok"});}return ok({});}<br>function ok(d){return ContentService.createTextOutput(JSON.stringify(d)).setMimeType(ContentService.MimeType.JSON);}</div>'],
     ['STEP 4','웹앱 배포','<b>배포 → 새 배포</b> → 유형: 웹앱 → 액세스: 모든 사용자 → 배포. URL을 복사하세요.'],
     ['STEP 5','URL 입력','설정 탭의 <b>Apps Script URL</b>에 붙여넣고 저장하세요.'],
-    ['STEP 6','시트에 명단 작성','[알바생] 탭과 [직원] 탭의 A열에 이름을 입력하세요. 앱 직원 탭 → 시트에서 불러오기 클릭.'],
+    ['STEP 6','시트에 명단 작성','[운영요원] 탭과 [직원] 탭의 A열에 이름을 입력하세요. 앱 직원 탭 → 시트에서 불러오기 클릭.'],
   ].map(([n,t,d])=>`<div style="background:var(--sf2);border-left:3px solid var(--ac);border-radius:0 10px 10px 0;padding:13px 15px;">
     <div style="font-size:10px;color:var(--ac);font-weight:900;letter-spacing:.1em;margin-bottom:3px;">${n}</div>
     <div style="font-size:14px;font-weight:700;margin-bottom:4px;">${t}</div>
