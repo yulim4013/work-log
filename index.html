@@ -8,7 +8,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
 <style>
 :root{
   --bg:#dde1f0;
@@ -229,8 +228,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 ══════════════════════════════ -->
 <div id="screen-worker" class="screen active">
   <nav class="nav">
-    <button class="nb active" onclick="goto('worker')"><i data-lucide="clock" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>출퇴근부</button>
-    <button class="nb" onclick="goto('admin')"><i data-lucide="shield" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>관리자</button>
+    <button class="nb active" onclick="goto('worker')">🕐 출퇴근부</button>
+    <button class="nb" onclick="goto('admin')">🔒 관리자</button>
   </nav>
   <div class="ct">
     <div class="pt">출퇴근 관리</div>
@@ -240,8 +239,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="ct-e" id="evName">-</div>
     </div>
     <div class="role-sw">
-      <button class="role-btn ra" id="roleAlba" onclick="setRole('alba')"><i data-lucide="hard-hat" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>알바생</button>
-      <button class="role-btn" id="roleStaff" onclick="setRole('staff')"><i data-lucide="briefcase" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>직원</button>
+      <button class="role-btn ra" id="roleAlba" onclick="setRole('alba')">🙋 알바생</button>
+      <button class="role-btn" id="roleStaff" onclick="setRole('staff')">👔 직원</button>
     </div>
 
     <!-- STEP 1 QR -->
@@ -255,7 +254,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       </div>
       <div class="sst" id="scanSt">📷 카메라 버튼을 눌러 스캔하세요</div>
       <div class="br">
-        <button class="btn btn-ac" style="flex:1" id="btnCam" onclick="startCam()"><i data-lucide="camera" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>카메라</button>
+        <button class="btn btn-ac" style="flex:1" id="btnCam" onclick="startCam()">📷 카메라</button>
         <button class="btn btn-gh" style="flex:1" onclick="stopCam()">중지</button>
       </div>
     </div>
@@ -273,8 +272,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="sn a" id="s3n">3</div>
       <div class="stitle">출근 / 퇴근</div>
       <div class="ar">
-        <button class="btn btn-in" id="btnIn" onclick="doIn()" disabled><i data-lucide="log-in" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>출근</button>
-        <button class="btn btn-out" id="btnOut" onclick="doOut()" disabled><i data-lucide="log-out" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>퇴근</button>
+        <button class="btn btn-in" id="btnIn" onclick="doIn()" disabled>✅ 출근</button>
+        <button class="btn btn-out" id="btnOut" onclick="doOut()" disabled>🚪 퇴근</button>
       </div>
       <div id="selInfo" style="font-size:11px;color:var(--mu);text-align:center;margin-top:10px;min-height:16px;"></div>
     </div>
@@ -301,27 +300,27 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
     </div>
   </div>
   <nav class="nav">
-    <button class="nb" onclick="goto('worker')"><i data-lucide="arrow-left" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>나가기</button>
-    <button class="nb active" id="adminNavLabel"><i data-lucide="shield-check" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>관리자</button>
+    <button class="nb" onclick="goto('worker')">← 나가기</button>
+    <button class="nb active" id="adminNavLabel">🔐 관리자</button>
   </nav>
   <div class="ct">
     <div class="pt">관리자</div>
     <p class="ps" id="adminSub">행사를 설정하세요</p>
     <div id="adminRoleBadge" style="margin-bottom:12px;"></div>
     <div class="atabs" id="adminTabs">
-      <button class="atab active" onclick="showTab('qr')"><i data-lucide="qr-code" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>QR</button>
-      <button class="atab" onclick="showTab('today')"><i data-lucide="calendar-check" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>오늘</button>
-      <button class="atab" onclick="showTab('records')"><i data-lucide="file-text" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>기록</button>
-      <button class="atab" id="tabPay" onclick="showTab('pay')"><i data-lucide="wallet" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>급여</button>
-      <button class="atab" id="tabStaff" onclick="showTab('staff')"><i data-lucide="users" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>직원</button>
-      <button class="atab" id="tabSettings" onclick="showTab('settings')"><i data-lucide="settings" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>설정</button>
+      <button class="atab active" onclick="showTab('qr')">📱 QR</button>
+      <button class="atab" onclick="showTab('today')">📋 오늘</button>
+      <button class="atab" onclick="showTab('records')">🗂 기록</button>
+      <button class="atab" id="tabPay" onclick="showTab('pay')">💰 급여</button>
+      <button class="atab" id="tabStaff" onclick="showTab('staff')">👥 직원</button>
+      <button class="atab" id="tabSettings" onclick="showTab('settings')">⚙️ 설정</button>
     </div>
 
     <!-- QR 탭 -->
     <div id="ap-qr" class="ap active">
       <div class="qr-tabs">
-        <button class="qt qa" id="qtAlba" onclick="showQR('alba')"><i data-lucide="hard-hat" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>알바생 QR</button>
-        <button class="qt" id="qtStaff" onclick="showQR('staff')"><i data-lucide="briefcase" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>직원 QR</button>
+        <button class="qt qa" id="qtAlba" onclick="showQR('alba')">🙋 알바생 QR</button>
+        <button class="qt" id="qtStaff" onclick="showQR('staff')">👔 직원 QR</button>
       </div>
       <div class="qw qwa" id="qwAlba">
         <div class="qbadge ba">알바생 전용</div>
@@ -648,7 +647,6 @@ function refreshAdmin(){
     }
   });
   showTab('qr');
-  if(typeof lucide!=='undefined') lucide.createIcons();
 }
 
 function showTab(id){
@@ -1349,8 +1347,6 @@ function toast(msg,cls='ok'){
 // ════════════════════════════════════════
 setRole('alba');
 updateAdminSub();
-// Lucide 아이콘 초기화
-if(typeof lucide!=='undefined') lucide.createIcons();
 </script>
 </body>
 </html>
