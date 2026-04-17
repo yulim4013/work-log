@@ -757,9 +757,10 @@ function adminLogin(){
 
 function refreshAdmin(){
   generateQRs(); updateAdminSub(); updateSyncStatus();
-  // 자동 싱크: 설정 ON + URL 있으면 시트에서 명단 자동 불러오기
+  // 자동 싱크: 설정 ON + URL 있으면 시트에서 명단 + 기록 자동 불러오기
   if(S.autoSync!==false && S.sheetUrl){
     loadFromSheets().catch(()=>{});
+    loadRecordsFromSheets().catch(()=>{});
   }
   // 역할 뱃지
   const badge=document.getElementById('adminRoleBadge');
@@ -792,8 +793,14 @@ function showTab(id){
   });
   document.querySelectorAll('.ap').forEach(p=>p.classList.remove('active'));
   document.getElementById('ap-'+id).classList.add('active');
-  if(id==='today') renderToday();
-  if(id==='records') renderRecords();
+  if(id==='today'){
+    if(S.autoSync!==false && S.sheetUrl) loadRecordsFromSheets().then(renderToday);
+    else renderToday();
+  }
+  if(id==='records'){
+    if(S.autoSync!==false && S.sheetUrl) loadRecordsFromSheets().then(renderRecords);
+    else renderRecords();
+  }
   if(id==='pay') renderPay();
   if(id==='staff') renderStaffLists();
   if(id==='settings') loadSettings();
@@ -1036,9 +1043,11 @@ function doIn(){
   if(!selName||!qrVerified) return;
   if(getTodayRec(selName,curRole)){toast('이미 출근 처리되었습니다','err');return;}
   const t=nowTime();
-  S.records.push({name:selName,role:curRole,date:todayKey(),checkIn:t,checkOut:null,event:S.event.name});
+  const newRec={name:selName,role:curRole,date:todayKey(),checkIn:t,checkOut:null,event:S.event.name};
+  S.records.push(newRec);
   save();renderNameGrid();updateActions();
   toast(`${selName} 출근 ✅ ${t}`,'ok');
+  syncRecordToSheet('add', newRec);
 }
 
 function doOut(){
@@ -1048,6 +1057,41 @@ function doOut(){
   if(rec.checkOut){toast('이미 퇴근 처리되었습니다','err');return;}
   rec.checkOut=nowTime(); save();renderNameGrid();updateActions();
   toast(`${selName} 퇴근 🚪 ${rec.checkOut} (${calcDur(rec.checkIn,rec.checkOut)})`,'ok');
+  syncRecordToSheet('update', rec);
+}
+
+// 출퇴근 기록을 시트에 자동 push (백그라운드, 실패 무시)
+async function syncRecordToSheet(action, rec){
+  if(!S.sheetUrl) return;
+  const body = action === 'add'
+    ? {action:'addRecord', role:rec.role, name:rec.name, date:rec.date, checkIn:rec.checkIn, event:rec.event}
+    : {action:'updateRecord', role:rec.role, name:rec.name, date:rec.date, checkOut:rec.checkOut};
+  try{
+    await fetch(S.sheetUrl, {method:'POST', body:JSON.stringify(body)});
+  } catch(e){}
+}
+
+// 시트에서 기록 전체 로드 (관리자 화면 진입 시 자동 호출)
+async function loadRecordsFromSheets(){
+  if(!S.sheetUrl) return;
+  try{
+    const r = await fetch(S.sheetUrl+'?action=getRecords');
+    const d = await r.json();
+    if(d.records && Array.isArray(d.records)){
+      // 로컬과 시트 merge: 시트가 마스터. 로컬에만 있는 최신 기록(아직 push 안 된 것) 보존
+      const key = x => `${x.role}|${x.name}|${x.date}`;
+      const map = new Map();
+      d.records.forEach(x => map.set(key(x), x));
+      S.records.forEach(x => {
+        const k = key(x);
+        const ex = map.get(k);
+        if(!ex) map.set(k, x);
+        else if(x.checkOut && !ex.checkOut) map.set(k, x);
+      });
+      S.records = Array.from(map.values());
+      save();
+    }
+  } catch(e){}
 }
 
 // ════════════════════════════════════════

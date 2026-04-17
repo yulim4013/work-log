@@ -1,4 +1,4 @@
-// work-log Google Sheets 연동 v3
+// work-log Google Sheets 연동 v4
 // 시트 구조:
 //   [운영요원] A:이름 B:급여타입(시급/일급) C:시급/일급 D:전화뒷4
 //   [직원]     A:이름 B:급여타입 C:평일시급(or일급) D:주말시급 E:전화뒷4
@@ -15,6 +15,10 @@ function doGet(e) {
       alba: readAlba(ss),
       staff: readStaff(ss)
     });
+  }
+
+  if (action === 'getRecords') {
+    return ok({records: readRecords(ss)});
   }
 
   return ok({status: 'ok'});
@@ -55,11 +59,38 @@ function doPost(e) {
     return ok({status: 'ok'});
   }
 
+  if (body.action === 'updateRecord') {
+    const sheet = getOrCreate(ss, '기록');
+    const values = sheet.getDataRange().getValues();
+    const roleStr = body.role === 'alba' ? '운영요원' : '직원';
+    for (let i = 1; i < values.length; i++) {
+      const sameRole = values[i][0] === roleStr;
+      const sameName = String(values[i][1]).trim() === String(body.name).trim();
+      const sameDate = formatSheetDate(values[i][2]) === body.date;
+      if (sameRole && sameName && sameDate) {
+        if (body.checkOut) sheet.getRange(i + 1, 5).setValue(body.checkOut);
+        if (body.checkIn) sheet.getRange(i + 1, 4).setValue(body.checkIn);
+        return ok({status: 'ok'});
+      }
+    }
+    return ok({status: 'not_found'});
+  }
+
   return ok({status: 'ok'});
 }
 
 function getOrCreate(ss, name) {
   return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+function formatSheetDate(v) {
+  if (v instanceof Date) {
+    const y = v.getFullYear();
+    const m = String(v.getMonth() + 1).padStart(2, '0');
+    const d = String(v.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+  return String(v);
 }
 
 function readAlba(ss) {
@@ -92,6 +123,22 @@ function readStaff(ss) {
     const p4 = String(r[4]||'').replace(/[^0-9]/g,'').slice(-4);
     if (p4.length === 4) obj.phone4 = p4;
     return obj;
+  });
+}
+
+function readRecords(ss) {
+  const sheet = ss.getSheetByName('기록');
+  if (!sheet) return [];
+  const values = sheet.getDataRange().getValues();
+  return values.slice(1).filter(function(r){return r[1];}).map(function(r){
+    return {
+      role: r[0] === '운영요원' ? 'alba' : 'staff',
+      name: String(r[1]).trim(),
+      date: formatSheetDate(r[2]),
+      checkIn: String(r[3] || ''),
+      checkOut: String(r[4] || ''),
+      event: String(r[5] || '')
+    };
   });
 }
 
