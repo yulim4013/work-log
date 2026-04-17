@@ -908,7 +908,7 @@ function getTodayRec(name,role){
 
 function renderNameGrid(){
   const g=document.getElementById('nameGrid'); g.innerHTML='';
-  const list=personList(curRole);
+  const list=personList(curRole).slice().sort((a,b)=>personName(a).localeCompare(personName(b),'ko'));
   if(!list.length){
     g.innerHTML=`<div style="grid-column:1/-1;font-size:12px;color:var(--mu);padding:10px 0;">등록된 ${curRole==='alba'?'운영요원':'직원'}이 없습니다</div>`;
     return;
@@ -1148,7 +1148,7 @@ function renderToday(){
     <div class="scard"><div class="sv">${S.alba.length+S.staff.length-recs.filter(r=>r.checkIn).length}</div><div class="slbl">미출근</div></div>
   `;
   const list=document.getElementById('todayList');
-  const allPeople=[...S.alba.map(p=>({n:personName(p),role:'alba'})),...S.staff.map(p=>({n:personName(p),role:'staff'}))];
+  const allPeople=[...S.alba.map(p=>({n:personName(p),role:'alba'})),...S.staff.map(p=>({n:personName(p),role:'staff'}))].sort((a,b)=>a.n.localeCompare(b.n,'ko'));
   if(!allPeople.length){list.innerHTML='<div class="empty"><div class="ei">👥</div>등록된 인원이 없습니다</div>';return;}
   list.innerHTML=allPeople.map(({n,role})=>{
     const rec=recs.find(r=>r.name===n&&r.role===role);
@@ -1217,7 +1217,7 @@ function clearFilters(){
 // ════════════════════════════════════════
 function renderPay(){
   const list=document.getElementById('payList');
-  const allPeople=[...S.alba.map(p=>({n:personName(p),role:'alba',person:p})),...S.staff.map(p=>({n:personName(p),role:'staff',person:p}))];
+  const allPeople=[...S.alba.map(p=>({n:personName(p),role:'alba',person:p})),...S.staff.map(p=>({n:personName(p),role:'staff',person:p}))].sort((a,b)=>a.n.localeCompare(b.n,'ko'));
   if(!S.records.length){list.innerHTML='<div class="empty"><div class="ei">💰</div>출퇴근 기록이 없습니다</div>';return;}
   list.innerHTML=allPeople.map(({n,role,person})=>{
     const recs=S.records.filter(r=>r.name===n&&r.role===role&&r.checkOut);
@@ -1386,9 +1386,11 @@ function formatRate(p){
 function renderStaffLists(){
   ['alba','staff'].forEach(role=>{
     const list=document.getElementById(role+'List');
-    const arr=role==='alba'?S.alba:S.staff;
+    const arr=(role==='alba'?S.alba:S.staff);
     if(!arr.length){list.innerHTML=`<div class="empty" style="padding:16px;"><div class="ei">👤</div>없음</div>`;return;}
-    list.innerHTML=arr.map((p,i)=>{
+    // 가나다순 정렬 (원본 배열의 인덱스 유지를 위해 index 포함)
+    const sorted=arr.map((p,i)=>({p,i})).sort((a,b)=>personName(a.p).localeCompare(personName(b.p),'ko'));
+    list.innerHTML=sorted.map(({p,i})=>{
       const name=personName(p);
       const rate=typeof p==='object'?formatRate(p):'-';
       const phone=typeof p==='object'&&p.phone4?` · 📱 ****${p.phone4}`:'';
