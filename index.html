@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출퇴근 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{
+  --bg:#dde1f0;
+  --sf:#ffffff;--sf2:#f4f5f9;--bd:rgba(30,30,60,0.06);
+  --ink:#1a1a2e;--mu:#8b8fa3;
+  --ac:#6366f1;--ac-d:rgba(99,102,241,0.1);
+  --bl:#3b82f6;--bl-d:rgba(59,130,246,0.1);
+  --gn:#059669;--gn-d:rgba(5,150,105,0.1);
+  --rd:#dc2626;--rd-d:rgba(220,38,38,0.1);
+  --yw:#d97706;--yw-d:rgba(217,119,6,0.1);
+  --pu:#9333ea;--pu-d:rgba(147,51,234,0.1);
+  --shadow:0 2px 8px rgba(67,56,202,0.04),0 4px 20px rgba(67,56,202,0.05);
+  --shadow-sm:0 1px 4px rgba(67,56,202,0.04);
+  --radius:20px;--radius-sm:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);background-attachment:fixed;color:var(--ink);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+
+.nav{background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;position:sticky;top:0;z-index:200;border-bottom:1px solid var(--bd);}
+.nb{flex:1;padding:13px 2px;background:none;border:none;color:var(--mu);font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.04em;text-transform:uppercase;}
+.nb.active{color:var(--ac);border-bottom-color:var(--ac);}
+
+.ct{padding:18px 16px;max-width:560px;margin:0 auto;width:100%;flex:1;}
+.pt{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.06em;color:var(--ac);margin-bottom:3px;}
+.ps{font-size:12px;color:var(--mu);margin-bottom:18px;}
+.sl{font-size:10px;font-weight:900;letter-spacing:.1em;color:var(--mu);text-transform:uppercase;margin-bottom:8px;}
+
+.clock-bar{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.ct-t{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--ac);letter-spacing:.04em;line-height:1;}
+.ct-d{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;}
+.ct-e{font-size:12px;color:var(--ink);font-weight:700;text-align:right;max-width:140px;opacity:0.7;}
+
+.role-sw{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:14px;background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow-sm);border-radius:40px;padding:5px;}
+.role-btn{border-radius:35px!important;}
+.role-btn{padding:10px;border:none;border-radius:35px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--mu);}
+.role-btn.ra{background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,0.25);}
+.role-btn.rs{background:linear-gradient(135deg,#3b82f6 0%,#60a5fa 100%);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,0.25);}
+
+.sc{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:18px;margin-bottom:12px;transition:all .3s;}
+.locked{opacity:.2;pointer-events:none;}
+.step-ok{border-color:rgba(74,222,128,.35)!important;background:rgba(74,222,128,.08)!important;}
+.sn{width:22px;height:22px;border-radius:50%;color:#fff;font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;}
+.sn.a{background:var(--ac);}.sn.s{background:var(--bl);}.sn.done{background:var(--gn);}
+.stitle{font-size:14px;font-weight:700;margin-bottom:4px;}
+.sdesc{font-size:12px;color:var(--mu);line-height:1.6;}
+
+.ng{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px;}
+.nbtn{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:12px 4px;color:var(--ink);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center;position:relative;}
+.nbtn:hover{border-color:var(--ac);}
+.nbtn.sel-a{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:700;}
+.nbtn.sel-s{background:var(--bl);color:#fff;border-color:var(--bl);font-weight:700;}
+.nbtn.di::after{content:'●';position:absolute;top:3px;right:5px;font-size:7px;color:var(--gn);}
+.nbtn.do::after{content:'●';position:absolute;top:3px;right:5px;font-size:7px;color:var(--rd);}
+
+.scan-wrap{position:relative;border-radius:16px;overflow:hidden;background:#000;margin-top:10px;border:1px solid var(--bd);}
+#preview{width:100%;display:block;max-height:230px;object-fit:cover;}
+.sov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.sfr{width:130px;height:130px;border:2.5px solid var(--ac);border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.55);}
+.sfr.sf-s{border-color:var(--bl);}
+.sln{position:absolute;width:110px;height:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent);animation:sm 2s linear infinite;}
+.sln.sl-s{background:linear-gradient(90deg,transparent,var(--bl),transparent);}
+@keyframes sm{0%{top:calc(50% - 65px)}100%{top:calc(50% + 65px)}}
+.sst{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--mu);text-align:center;min-height:40px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.sst.ok{color:var(--gn);border-color:rgba(74,222,128,.3);background:var(--gn-d);}
+.sst.err{color:var(--rd);border-color:rgba(248,113,113,.3);background:var(--rd-d);}
+
+.btn{padding:12px 18px;border:none;border-radius:999px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn:disabled{opacity:.25;cursor:not-allowed;}
+.btn-in{background:var(--gn);color:#fff;}.btn-in:not(:disabled):hover{filter:brightness(1.1);}
+.btn-out{background:var(--rd);color:#fff;}.btn-out:not(:disabled):hover{filter:brightness(1.1);}
+.btn-ac{background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);color:#fff;box-shadow:0 4px 12px rgba(99,102,241,0.25);}.btn-ac:not(:disabled):hover{filter:brightness(1.05);}
+.btn-bl{background:var(--bl);color:#fff;}.btn-bl:not(:disabled):hover{filter:brightness(1.1);}
+.btn-ink{background:#0a0a1f;color:#fff;border:none;}.btn-ink:hover{background:#1a1a35;}
+.btn-gh{background:var(--sf);color:var(--ink);border:1px solid var(--bd);box-shadow:var(--shadow-sm);}.btn-gh:hover{background:var(--sf2);}
+.btn-dng{background:var(--sf);color:var(--rd);border:1px solid rgba(220,38,38,.2);box-shadow:var(--shadow-sm);}.btn-dng:hover{background:var(--rd);color:#fff;}
+.btn-full{width:100%;}.ar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.br{display:flex;gap:8px;margin-top:10px;}
+
+.inp{width:100%;background:var(--sf2);border:1px solid var(--bd);color:var(--ink);border-radius:12px;padding:11px 14px;font-family:inherit;font-size:13px;}
+.inp:focus{outline:none;border-color:var(--ac);background:#fff;box-shadow:0 0 0 3px var(--ac-d);}.inp::placeholder{color:var(--mu);}
+.fg{margin-bottom:12px;}
+.fl{font-size:11px;color:var(--mu);font-weight:700;margin-bottom:4px;display:block;letter-spacing:.04em;text-transform:uppercase;}
+.fr{display:flex;gap:8px;}
+
+/* QR */
+.qr-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.qt{padding:11px;border:1px solid var(--bd);border-radius:999px;background:var(--sf);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--mu);box-shadow:var(--shadow-sm);}
+.qt.qa{background:var(--ac);border-color:var(--ac);color:#fff;}
+.qt.qs{background:var(--bl);border-color:var(--bl);color:#fff;}
+.qw{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px;}
+.qw.qwa{background:var(--sf);}
+.qw.qws{background:var(--sf);}
+.qbox{background:#fff;border-radius:12px;padding:14px;display:inline-block;margin:8px 0;box-shadow:var(--shadow-sm);border:1px solid var(--bd);}
+.qtok{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.15em;margin:4px 0;}
+.qtok.ta{color:var(--ac);}.qtok.ts{color:var(--bl);}
+.qbadge{font-size:10px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:.06em;display:inline-block;margin-bottom:6px;}
+.qbadge.ba{background:var(--ac-d);color:var(--ac);}.qbadge.bs{background:var(--bl-d);color:var(--bl);}
+.qcd{font-size:11px;color:var(--yw);font-weight:700;margin-top:4px;}
+.qhint{font-size:11px;color:var(--mu);line-height:1.65;text-align:left;margin-top:10px;background:var(--sf2);border-radius:12px;padding:10px 12px;}
+
+/* STATS */
+.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:16px;}
+.scard{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:16px;}
+.sv{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--ac);}
+.slbl{font-size:10px;color:var(--mu);margin-top:1px;}
+
+/* RECORDS */
+.ri{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:13px 15px;margin-bottom:8px;}
+.rt{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.rn{font-weight:700;font-size:14px;}
+.rm{font-size:10px;color:var(--mu);margin-top:1px;}
+.rtimes{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{display:flex;align-items:center;gap:3px;background:var(--sf2);border-radius:999px;padding:3px 10px;font-size:11px;}
+.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.dot-i{background:var(--gn);}.dot-o{background:var(--rd);}
+.dc{background:var(--ac-d);color:var(--ac);border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;}
+
+/* PAY BOX */
+.pb{background:var(--sf2);border-radius:14px;padding:13px 15px;margin-top:10px;border:1px solid var(--bd);}
+.pr{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;align-items:center;}
+.pr.ptot{margin-bottom:0;font-weight:700;font-size:13px;border-top:1px solid var(--bd);padding-top:7px;margin-top:7px;}
+.plbl{color:var(--mu);}
+.pamt{font-weight:600;}
+.ptot-amt{color:var(--ac);font-size:15px;}
+.ptot-amt.st{color:var(--bl);}
+.tag{font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:3px;vertical-align:middle;}
+.tn{background:var(--pu-d);color:var(--pu);}
+.tw{background:var(--yw-d);color:var(--yw);}
+.to{background:var(--rd-d);color:var(--rd);}
+
+/* BADGES */
+.badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;}
+.b-in{background:var(--gn-d);color:var(--gn);}
+.b-out{background:var(--rd-d);color:var(--rd);}
+.b-abs{background:var(--sf2);color:var(--mu);}
+.b-a{background:var(--ac-d);color:var(--ac);}
+.b-s{background:var(--bl-d);color:var(--bl);}
+
+/* ADMIN TABS */
+.atabs{display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap;}
+.atab{padding:8px 13px;border-radius:999px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;background:var(--sf);border:1px solid var(--bd);color:var(--mu);box-shadow:var(--shadow-sm);}
+.atab.active{background:#0a0a1f;color:#fff;border-color:#0a0a1f;}
+.ap{display:none;}.ap.active{display:block;}
+
+.si{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow-sm);border-radius:14px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.bdel{background:none;border:1px solid rgba(248,113,113,.25);color:var(--rd);border-radius:5px;padding:3px 8px;font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s;}
+.bdel:hover{background:var(--rd);color:#fff;}
+
+/* PAY SUMMARY CARD */
+.psc{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:16px;margin-bottom:10px;}
+.psc-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.psc-g{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.psc-item{text-align:center;background:var(--sf2);border-radius:12px;padding:10px 4px;}
+.psc-v{font-family:'Bebas Neue',sans-serif;font-size:18px;}
+.psc-v.va{color:var(--ac);}.psc-v.vs{color:var(--bl);}
+.psc-l{font-size:9px;color:var(--mu);margin-top:1px;}
+
+/* SETTINGS BOX */
+.sbox{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.sbox-t{font-size:13px;font-weight:700;margin-bottom:12px;}
+.rate-g{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+/* EXPORT SECTION */
+.export-box{background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.export-box-t{font-size:13px;font-weight:700;margin-bottom:6px;}
+.export-desc{font-size:12px;color:var(--mu);line-height:1.65;margin-bottom:14px;}
+.upload-area{border:2px dashed var(--bd);background:var(--sf2);border-radius:14px;padding:22px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px;position:relative;}
+.upload-area:hover{border-color:var(--ac);background:var(--ac-d);}
+.upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;}
+.upload-icon{font-size:28px;margin-bottom:6px;}
+.upload-text{font-size:13px;font-weight:600;}
+.upload-sub{font-size:11px;color:var(--mu);margin-top:3px;}
+.match-preview{background:var(--sf2);border-radius:14px;padding:14px;margin-bottom:10px;font-size:12px;}
+.match-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);}
+.match-row:last-child{border-bottom:none;}
+.match-ok{color:var(--gn);font-size:11px;}
+.match-fail{color:var(--rd);font-size:11px;}
+
+.frow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.fsel,.finp{background:var(--sf);border:1px solid var(--bd);color:var(--ink);border-radius:999px;padding:8px 14px;font-family:inherit;font-size:12px;box-shadow:var(--shadow-sm);}
+
+.syncbar{display:flex;align-items:center;gap:7px;background:var(--sf);border:1px solid var(--bd);box-shadow:var(--shadow-sm);border-radius:999px;padding:10px 14px;margin-bottom:12px;font-size:11px;}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.sdot.ok{background:var(--gn);}.sdot.no{background:var(--mu);}
+.sdot.spin{background:var(--yw);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+#admin-lock{position:fixed;inset:0;background:linear-gradient(135deg,rgba(221,225,240,0.9) 0%,rgba(232,235,245,0.9) 50%,rgba(214,220,239,0.9) 100%);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;z-index:500;padding:24px;}
+.lcard{background:var(--sf);border:1px solid var(--bd);border-radius:24px;padding:32px 28px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 32px rgba(99,102,241,0.12),0 2px 8px rgba(67,56,202,0.06);}
+.lt{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--ac);letter-spacing:.06em;margin-bottom:6px;}
+.ls{font-size:12px;color:var(--mu);margin-bottom:20px;}
+.linp{width:100%;background:var(--sf2);border:1px solid var(--bd);color:var(--ink);border-radius:14px;padding:14px;font-family:inherit;font-size:18px;text-align:center;letter-spacing:.2em;margin-bottom:12px;}
+.linp:focus{outline:none;border-color:var(--ac);background:#fff;box-shadow:0 0 0 3px var(--ac-d);}
+.lhint{font-size:11px;color:var(--mu);margin-top:10px;}
+.role-badge{display:inline-block;font-size:10px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:.06em;margin-bottom:12px;}
+.role-badge.normal{background:var(--ac-d);color:var(--ac);}
+.role-badge.super{background:var(--bl-d);color:var(--bl);}
+.tab-locked{opacity:.35;pointer-events:none;position:relative;}
+.lock-overlay{display:flex;align-items:center;justify-content:center;padding:40px 16px;flex-direction:column;gap:10px;color:var(--mu);}
+.lock-overlay-icon{font-size:36px;}
+.lock-overlay-text{font-size:13px;text-align:center;line-height:1.7;}
+
+.div{border:none;border-top:1px solid var(--bd);margin:16px 0;}
+.empty{text-align:center;padding:32px 16px;color:var(--mu);font-size:13px;}
+.ei{font-size:32px;margin-bottom:8px;}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0a0a1f;color:#fff;padding:12px 24px;border-radius:999px;font-size:13px;font-weight:600;transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:9999;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(10,10,31,0.2);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.ok{background:var(--gn);}#toast.err{background:var(--rd);}#toast.warn{background:var(--yw);}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     알바생 / 직원 출퇴근 화면
+══════════════════════════════ -->
+<div id="screen-worker" class="screen active">
+  <nav class="nav">
+    <button class="nb active" onclick="goto('worker')"><i data-lucide="clock" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>출퇴근부</button>
+    <button class="nb" onclick="goto('admin')"><i data-lucide="shield" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>관리자</button>
+  </nav>
+  <div class="ct">
+    <div class="pt">출퇴근 관리</div>
+    <p class="ps">역할 선택 후 QR을 스캔하세요</p>
+    <div class="clock-bar">
+      <div><div class="ct-t" id="clock">--:--:--</div><div class="ct-d" id="dateStr"></div></div>
+      <div class="ct-e" id="evName">-</div>
+    </div>
+    <div class="role-sw">
+      <button class="role-btn ra" id="roleAlba" onclick="setRole('alba')"><i data-lucide="hard-hat" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>알바생</button>
+      <button class="role-btn" id="roleStaff" onclick="setRole('staff')"><i data-lucide="briefcase" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>직원</button>
+    </div>
+
+    <!-- STEP 1 QR -->
+    <div class="sc" id="s1">
+      <div class="sn a" id="s1n">1</div>
+      <div class="stitle" id="s1title">QR 스캔</div>
+      <div class="sdesc" id="s1desc">알바생/직원 QR이 따로 있어요. 관리자 화면에서 맞는 QR을 보여달라고 하세요.</div>
+      <div class="scan-wrap" id="scanWrap" style="display:none">
+        <video id="preview" autoplay playsinline muted></video>
+        <div class="sov"><div class="sfr" id="scanFrame"></div><div class="sln" id="scanLine"></div></div>
+      </div>
+      <div class="sst" id="scanSt">📷 카메라 버튼을 눌러 스캔하세요</div>
+      <div class="br">
+        <button class="btn btn-ac" style="flex:1" id="btnCam" onclick="startCam()"><i data-lucide="camera" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>카메라</button>
+        <button class="btn btn-gh" style="flex:1" onclick="stopCam()">중지</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 이름 -->
+    <div class="sc locked" id="s2">
+      <div class="sn a" id="s2n">2</div>
+      <div class="stitle">이름 선택</div>
+      <div class="sdesc">본인 이름을 선택하세요</div>
+      <div class="ng" id="nameGrid"></div>
+    </div>
+
+    <!-- STEP 3 출/퇴근 -->
+    <div class="sc locked" id="s3">
+      <div class="sn a" id="s3n">3</div>
+      <div class="stitle">출근 / 퇴근</div>
+      <div class="ar">
+        <button class="btn btn-in" id="btnIn" onclick="doIn()" disabled><i data-lucide="log-in" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>출근</button>
+        <button class="btn btn-out" id="btnOut" onclick="doOut()" disabled><i data-lucide="log-out" style="width:15px;height:15px;vertical-align:-3px;margin-right:3px;"></i>퇴근</button>
+      </div>
+      <div id="selInfo" style="font-size:11px;color:var(--mu);text-align:center;margin-top:10px;min-height:16px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     관리자 화면
+══════════════════════════════ -->
+<div id="screen-admin" class="screen">
+  <div id="admin-lock">
+    <div class="lcard">
+      <div class="lt">관리자 입장</div>
+      <div class="ls">비밀번호를 입력하세요</div>
+      <input type="password" class="linp" id="adminPw" placeholder="••••" onkeydown="if(event.key==='Enter')adminLogin()">
+      <button class="btn btn-ac btn-full" onclick="adminLogin()">입장</button>
+      <div style="margin-top:16px;background:var(--sf2);border-radius:10px;padding:12px;text-align:left;">
+        <div style="font-size:11px;color:var(--mu);line-height:1.9;">
+          <span style="display:inline-block;background:var(--ac-d);color:var(--ac);font-size:10px;font-weight:900;padding:1px 7px;border-radius:10px;margin-right:4px;">일반</span>QR · 오늘 현황 · 기록 조회<br>
+          <span style="display:inline-block;background:var(--bl-d);color:var(--bl);font-size:10px;font-weight:900;padding:1px 7px;border-radius:10px;margin-right:4px;">총괄</span>급여 · 직원관리 · 설정 포함 전체
+        </div>
+      </div>
+      <div class="lhint">기본 비밀번호 — 일반: 1234 / 총괄: 5678</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <button class="nb" onclick="goto('worker')"><i data-lucide="arrow-left" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>나가기</button>
+    <button class="nb active" id="adminNavLabel"><i data-lucide="shield-check" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>관리자</button>
+  </nav>
+  <div class="ct">
+    <div class="pt">관리자</div>
+    <p class="ps" id="adminSub">행사를 설정하세요</p>
+    <div id="adminRoleBadge" style="margin-bottom:12px;"></div>
+    <div class="atabs" id="adminTabs">
+      <button class="atab active" onclick="showTab('qr')"><i data-lucide="qr-code" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>QR</button>
+      <button class="atab" onclick="showTab('today')"><i data-lucide="calendar-check" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>오늘</button>
+      <button class="atab" onclick="showTab('records')"><i data-lucide="file-text" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>기록</button>
+      <button class="atab" id="tabPay" onclick="showTab('pay')"><i data-lucide="wallet" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>급여</button>
+      <button class="atab" id="tabStaff" onclick="showTab('staff')"><i data-lucide="users" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>직원</button>
+      <button class="atab" id="tabSettings" onclick="showTab('settings')"><i data-lucide="settings" style="width:13px;height:13px;vertical-align:-2px;margin-right:2px;"></i>설정</button>
+    </div>
+
+    <!-- QR 탭 -->
+    <div id="ap-qr" class="ap active">
+      <div class="qr-tabs">
+        <button class="qt qa" id="qtAlba" onclick="showQR('alba')"><i data-lucide="hard-hat" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>알바생 QR</button>
+        <button class="qt" id="qtStaff" onclick="showQR('staff')"><i data-lucide="briefcase" style="width:14px;height:14px;vertical-align:-2px;margin-right:3px;"></i>직원 QR</button>
+      </div>
+      <div class="qw qwa" id="qwAlba">
+        <div class="qbadge ba">알바생 전용</div>
+        <div class="qtok ta" id="tokAlba">-</div>
+        <div class="qbox" id="qboxAlba"></div>
+        <div class="qcd" id="qcdAlba"></div>
+        <div class="qhint">🙋 알바생 화면에서 <b>알바생</b> 선택 후 이 QR을 스캔하면 됩니다.</div>
+      </div>
+      <div class="qw qws" id="qwStaff" style="display:none">
+        <div class="qbadge bs">직원 전용</div>
+        <div class="qtok ts" id="tokStaff">-</div>
+        <div class="qbox" id="qboxStaff"></div>
+        <div class="qcd" id="qcdStaff"></div>
+        <div class="qhint">👔 직원 화면에서 <b>직원</b> 선택 후 이 QR을 스캔하면 됩니다.</div>
+      </div>
+    </div>
+
+    <!-- 오늘 탭 -->
+    <div id="ap-today" class="ap">
+      <div class="sg" id="todayStats"></div>
+      <div class="sl">오늘 현황</div>
+      <div id="todayList"></div>
+    </div>
+
+    <!-- 기록 탭 -->
+    <div id="ap-records" class="ap">
+      <div class="syncbar"><div class="sdot no" id="syncDot"></div><span id="syncMsg">Google Sheets 미연결</span></div>
+      <div class="frow">
+        <select class="fsel" id="filterType" onchange="renderRecords()">
+          <option value="">전체</option><option value="alba">알바생</option><option value="staff">직원</option>
+        </select>
+        <select class="fsel" id="filterName" onchange="renderRecords()"><option value="">전체 인원</option></select>
+        <input type="date" class="finp" id="filterDate" onchange="renderRecords()">
+        <button class="btn btn-gh" style="padding:7px 11px;font-size:11px;" onclick="clearFilters()">초기화</button>
+      </div>
+      <div id="recordsList"></div>
+      <div class="div"></div>
+      <div class="sl">내보내기</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-gh" style="padding:10px 14px;" onclick="exportCSV()">📥 CSV</button>
+        <button class="btn btn-gh" style="padding:10px 14px;" onclick="syncSheets()">☁️ 시트 동기화</button>
+      </div>
+    </div>
+
+    <!-- 급여 탭 -->
+    <div id="ap-pay" class="ap">
+      <div class="sl">급여 계산 결과</div>
+      <div id="payList"></div>
+      <div class="div"></div>
+
+      <!-- 개인정보 업로드 & 지급표 추출 -->
+      <div class="export-box">
+        <div class="export-box-t">📋 급여 지급표 추출</div>
+        <div class="export-desc">
+          이름 / 전화번호 / 주민번호 / 은행명 / 계좌번호가 담긴 엑셀을 업로드하면
+          급여와 합쳐진 지급표를 즉시 생성합니다.<br>
+          <b>개인정보는 앱에 저장되지 않습니다.</b>
+        </div>
+        <div class="sl">엑셀 양식 안내</div>
+        <div style="background:var(--sf2);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--mu);margin-bottom:12px;line-height:1.8;">
+          A열: 이름 &nbsp;|&nbsp; B열: 전화번호 &nbsp;|&nbsp; C열: 주민번호<br>
+          D열: 은행명 &nbsp;|&nbsp; E열: 계좌번호<br>
+          <span style="color:var(--ac);">1행은 헤더, 2행부터 데이터</span>
+        </div>
+        <button class="btn btn-gh btn-full" style="margin-bottom:8px;padding:10px;" onclick="downloadPersonalTemplate()">📄 개인정보 양식 다운로드</button>
+
+        <div class="upload-area" id="uploadArea">
+          <input type="file" accept=".xlsx,.xls,.csv" id="personalFile" onchange="handlePersonalFile(event)">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text">개인정보 엑셀 업로드</div>
+          <div class="upload-sub">클릭하거나 파일을 드래그하세요</div>
+        </div>
+
+        <div id="matchPreview" style="display:none">
+          <div class="sl">매칭 결과</div>
+          <div class="match-preview" id="matchList"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+            <button class="btn btn-ac" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('alba')">🙋 알바생 지급표 xlsx</button>
+            <button class="btn btn-bl" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('staff')">👔 직원 지급표 xlsx</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 직원 관리 탭 -->
+    <div id="ap-staff" class="ap">
+      <!-- 알바생 -->
+      <div class="sl">알바생</div>
+      <div class="fr" style="margin-bottom:10px;">
+        <input type="text" class="inp" id="newAlba" placeholder="이름 입력..." onkeydown="if(event.key==='Enter')addPerson('alba')">
+        <button class="btn btn-ac" style="padding:10px 16px;" onclick="addPerson('alba')">추가</button>
+      </div>
+      <div id="albaList"></div>
+      <div class="div"></div>
+      <!-- 직원 -->
+      <div class="sl">직원</div>
+      <div class="fr" style="margin-bottom:10px;">
+        <input type="text" class="inp" id="newStaff" placeholder="이름 입력..." onkeydown="if(event.key==='Enter')addPerson('staff')">
+        <button class="btn btn-bl" style="padding:10px 16px;" onclick="addPerson('staff')">추가</button>
+      </div>
+      <div id="staffList"></div>
+      <div class="div"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="loadFromSheets()">☁️ 시트에서 불러오기</button>
+      </div>
+    </div>
+
+    <!-- 설정 탭 -->
+    <div id="ap-settings" class="ap">
+      <!-- 행사 정보 -->
+      <div class="sbox">
+        <div class="sbox-t">🎪 행사 정보</div>
+        <div class="fg"><label class="fl">행사 이름</label><input type="text" class="inp" id="evNameInput" placeholder="예: 2025 봄 축제"></div>
+        <div class="fr">
+          <div style="flex:1"><label class="fl">시작일</label><input type="date" class="inp" id="evStart"></div>
+          <div style="flex:1"><label class="fl">종료일</label><input type="date" class="inp" id="evEnd"></div>
+        </div>
+        <button class="btn btn-ink btn-full" style="margin-top:12px;" onclick="saveEvent()">저장</button>
+      </div>
+
+      <!-- 알바생 급여 설정 -->
+      <div class="sbox">
+        <div class="sbox-t">🙋 알바생 급여 설정</div>
+        <div class="rate-g">
+          <div class="fg"><label class="fl">시급 (원)</label><input type="number" class="inp" id="albaRate" placeholder="11000"></div>
+          <div class="fg"><label class="fl">기본 근무시간 (h)</label><input type="number" class="inp" id="albaBase" placeholder="8"></div>
+        </div>
+        <div style="font-size:11px;color:var(--mu);line-height:1.7;background:var(--sf2);border-radius:8px;padding:10px;margin-bottom:10px;">
+          휴게시간 1시간 자동 차감<br>
+          기본시간 초과분 x 1.5배<br>
+          소득세 3% + 지방���득세 (10원 단위 절삭)<br>
+          인건비 33,333원 이�� 세금 면제
+        </div>
+        <button class="btn btn-ink btn-full" onclick="savePaySettings()">저장</button>
+      </div>
+
+      <!-- 직원 수당 설정 -->
+      <div class="sbox">
+        <div class="sbox-t">👔 직원 수당 설정</div>
+        <div class="rate-g">
+          <div class="fg"><label class="fl">평일 시급 (원)</label><input type="number" class="inp" id="staffWeekday" placeholder="15000"></div>
+          <div class="fg"><label class="fl">주말 시급 (원)</label><input type="number" class="inp" id="staffWeekend" placeholder="20000"></div>
+        </div>
+        <div class="fr">
+          <div style="flex:1"><label class="fl">정규 출근</label><input type="time" class="inp" id="staffWorkStart" value="09:00"></div>
+          <div style="flex:1"><label class="fl">정규 퇴근</label><input type="time" class="inp" id="staffWorkEnd" value="18:00"></div>
+        </div>
+        <div style="font-size:11px;color:var(--mu);line-height:1.7;background:var(--sf2);border-radius:8px;padding:10px;margin-bottom:10px;">
+          정규시간 외 시간만 수당 계산<br>
+          야간(22:00~06:00) 구간 x 1.5배 추가<br>
+          소득세 3% + 지방소득세 (10원 단위 절삭)
+        </div>
+        <button class="btn btn-ink btn-full" onclick="savePaySettings()">저장</button>
+      </div>
+
+      <!-- 구글 시트 -->
+      <div class="sbox">
+        <div class="sbox-t">☁️ Google Sheets 연동</div>
+        <div class="fg"><label class="fl">Apps Script URL</label><input type="text" class="inp" id="sheetUrl" placeholder="https://script.google.com/macros/s/..."></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ac" style="flex:1;padding:10px;" onclick="saveSheetUrl()">저장 및 테스트</button>
+          <button class="btn btn-gh" style="flex:1;padding:10px;" onclick="showGuide()">📖 설정 방법</button>
+        </div>
+      </div>
+
+      <div class="div"></div>
+      <div class="sl">비밀번호 변경</div>
+      <div class="fg">
+        <label class="fl">일반 관리자 비밀번호</label>
+        <div class="fr">
+          <input type="password" class="inp" id="newPw" placeholder="새 비밀번호">
+          <button class="btn btn-gh" style="padding:10px 14px;white-space:nowrap;" onclick="changePw('admin')">변경</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">총괄 관리자 비밀번호</label>
+        <div class="fr">
+          <input type="password" class="inp" id="newSuperPw" placeholder="새 비밀번호">
+          <button class="btn btn-gh" style="padding:10px 14px;white-space:nowrap;" onclick="changePw('super')">변경</button>
+        </div>
+      </div>
+      <div class="div"></div>
+      <div class="sl">위험 구역</div>
+      <button class="btn btn-dng btn-full" onclick="clearAll()">🗑️ 전체 기록 삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 가이드 모달 -->
+<div id="guideModal" style="display:none;position:fixed;inset:0;background:rgba(10,10,31,0.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:800;overflow-y:auto;padding:20px;">
+  <div style="background:#fff;border-radius:24px;max-width:540px;margin:0 auto;padding:28px;box-shadow:0 20px 60px rgba(67,56,202,0.15);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--ac);letter-spacing:.06em;">Apps Script 설정 가이드</div>
+      <button onclick="hideGuide()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--mu);">✕</button>
+    </div>
+    <div id="guideContent"></div>
+    <button class="btn btn-ac btn-full" onclick="hideGuide()" style="margin-top:16px;">확인</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let S = JSON.parse(localStorage.getItem('evt_v3') || 'null') || {
+  adminPw: '1234',
+  superPw: '5678',
+  event: { name:'', start:'', end:'' },
+  alba: ['김민준','이서연','박지훈','최하은','정도윤'],
+  staff: ['이팀장','박과장','최대리'],
+  records: [],
+  sheetUrl: '',
+  pay: {
+    albaRate: 11000, albaBase: 8,
+    staffWeekday: 15000, staffWeekend: 20000,
+    staffWorkStart: '09:00', staffWorkEnd: '18:00'
+  }
+};
+function save(){ localStorage.setItem('evt_v3', JSON.stringify(S)); }
+
+let selName=null, curRole='alba', qrVerified=false;
+let camStream=null, camTimer=null;
+let adminUnlocked=false;   // 일반 관리자
+let superUnlocked=false;   // 총괄 관리자
+let personalData=[]; // 업로드된 개인정보 (메모리만)
+
+// ════════════════════════════════════════
+//  CLOCK
+// ════════════════════════════════════════
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('ko-KR');
+  const days=['일','월','화','수','목','금','토'];
+  document.getElementById('dateStr').textContent=
+    `${n.getFullYear()}.${n.getMonth()+1}.${n.getDate()} (${days[n.getDay()]})`;
+  updateQRCountdown();
+}
+tick(); setInterval(tick,1000);
+
+// ════════════════════════════════════════
+//  TOKENS (알바생/직원 별도)
+// ════════════════════════════════════════
+function makeToken(role){
+  const d=new Date();
+  const base=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${role}_evt25`;
+  let h=0; for(let i=0;i<base.length;i++){h=((h<<5)-h)+base.charCodeAt(i);h|=0;}
+  return (role==='alba'?'AL-':'ST-')+Math.abs(h).toString(36).toUpperCase().slice(0,6);
+}
+
+function updateQRCountdown(){
+  const n=new Date(), m=new Date(n); m.setHours(24,0,0,0);
+  const diff=Math.floor((m-n)/1000);
+  const h=Math.floor(diff/3600),mm=Math.floor((diff%3600)/60),ss=diff%60;
+  const txt=`갱신까지 ${h}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  ['qcdAlba','qcdStaff'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
+}
+
+function generateQRs(){
+  ['alba','staff'].forEach(role=>{
+    const tok=makeToken(role);
+    const sfx=role==='alba'?'Alba':'Staff';
+    document.getElementById('tok'+sfx).textContent=tok;
+    const box=document.getElementById('qbox'+sfx);
+    box.innerHTML='';
+    new QRCode(box,{text:tok,width:170,height:170,colorDark:'#1a1612',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+  });
+}
+
+// ════════════════════════════════════════
+//  SCREENS & TABS
+// ════════════════════════════════════════
+function goto(s){
+  if(s==='admin'){
+    document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));
+    document.getElementById('screen-admin').classList.add('active');
+    if(!adminUnlocked){document.getElementById('admin-lock').style.display='flex';return;}
+    refreshAdmin(); return;
+  }
+  // 관리자에서 나갈 때 세션 초기화
+  adminUnlocked=false; superUnlocked=false;
+  document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));
+  document.getElementById('screen-'+s).classList.add('active');
+  stopCam();
+}
+
+function adminLogin(){
+  const pw=document.getElementById('adminPw').value;
+  if(pw===S.superPw){
+    superUnlocked=true; adminUnlocked=true;
+    document.getElementById('admin-lock').style.display='none';
+    document.getElementById('adminPw').value='';
+    refreshAdmin(); toast('총괄 관리자 모드 ✅','ok');
+  } else if(pw===S.adminPw){
+    adminUnlocked=true; superUnlocked=false;
+    document.getElementById('admin-lock').style.display='none';
+    document.getElementById('adminPw').value='';
+    refreshAdmin(); toast('일반 관리자 모드 ✅','ok');
+  } else {
+    toast('비밀번호가 틀렸습니다','err');
+    document.getElementById('adminPw').value='';
+  }
+}
+
+function refreshAdmin(){
+  generateQRs(); updateAdminSub(); updateSyncStatus();
+  // 역할 뱃지
+  const badge=document.getElementById('adminRoleBadge');
+  if(superUnlocked){
+    badge.innerHTML='<span class="role-badge super">👑 총괄 관리자</span>';
+  } else {
+    badge.innerHTML='<span class="role-badge normal">🔑 일반 관리자</span>';
+  }
+  // 탭 잠금: 일반 관리자는 급여·직원·설정 비활성화
+  ['tabPay','tabStaff','tabSettings'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!superUnlocked){
+      el.classList.add('tab-locked');
+      el.title='총괄 관리자만 접근 가능합니다';
+    } else {
+      el.classList.remove('tab-locked');
+      el.title='';
+    }
+  });
+  showTab('qr');
+  if(typeof lucide!=='undefined') lucide.createIcons();
+}
+
+function showTab(id){
+  // 권한 체크
+  if(['pay','staff','settings'].includes(id) && !superUnlocked){
+    toast('총괄 관리자만 접근 가능합니다 🔒','err'); return;
+  }
+  document.querySelectorAll('.atab').forEach((b,i)=>{
+    b.classList.toggle('active',['qr','today','records','pay','staff','settings'][i]===id);
+  });
+  document.querySelectorAll('.ap').forEach(p=>p.classList.remove('active'));
+  document.getElementById('ap-'+id).classList.add('active');
+  if(id==='today') renderToday();
+  if(id==='records') renderRecords();
+  if(id==='pay') renderPay();
+  if(id==='staff') renderStaffLists();
+  if(id==='settings') loadSettings();
+}
+
+function showQR(role){
+  document.getElementById('qwAlba').style.display=role==='alba'?'block':'none';
+  document.getElementById('qwStaff').style.display=role==='staff'?'block':'none';
+  document.getElementById('qtAlba').className='qt'+(role==='alba'?' qa':'');
+  document.getElementById('qtStaff').className='qt'+(role==='staff'?' qs':'');
+}
+
+function updateAdminSub(){
+  const ev=S.event;
+  document.getElementById('adminSub').textContent=ev.name
+    ?`${ev.name}${ev.start?' · '+ev.start+(ev.end?' ~ '+ev.end:'')':''}`
+    :'행사를 설정하세요';
+  document.getElementById('evName').textContent=ev.name||'-';
+}
+
+// ════════════════════════════════════════
+//  ROLE SWITCH
+// ════════════════════════════════════════
+function setRole(r){
+  curRole=r; qrVerified=false; selName=null;
+  document.getElementById('roleAlba').className='role-btn'+(r==='alba'?' ra':'');
+  document.getElementById('roleStaff').className='role-btn'+(r==='staff'?' rs':'');
+  // step colors
+  ['s1n','s2n','s3n'].forEach(id=>{
+    document.getElementById(id).className='sn '+(r==='alba'?'a':'s');
+  });
+  document.getElementById('btnIn').className='btn '+(r==='alba'?'btn-in':'btn-in');
+  document.getElementById('scanFrame').className='sfr'+(r==='staff'?' sf-s':'');
+  document.getElementById('scanLine').className='sln'+(r==='staff'?' sl-s':'');
+  document.getElementById('s1title').textContent=r==='alba'?'알바생 QR 스캔':'직원 QR 스캔';
+  document.getElementById('s1desc').textContent=r==='alba'
+    ?'관리자 화면 QR 탭 → 알바생 QR을 보여달라고 하세요.'
+    :'관리자 화면 QR 탭 → 직원 QR을 보여달라고 하세요.';
+  document.getElementById('s2').classList.add('locked');
+  document.getElementById('s3').classList.add('locked');
+  setScanSt('📷 카메라 버튼을 눌러 스캔하세요','');
+  stopCam();
+  renderNameGrid();
+}
+
+// ════════════════════════════════════════
+//  CAMERA / SCAN
+// ════════════════════════════════════════
+async function startCam(){
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    document.getElementById('preview').srcObject=camStream;
+    document.getElementById('scanWrap').style.display='block';
+    document.getElementById('btnCam').disabled=true;
+    setScanSt('📷 QR 코드를 프레임 안에 맞춰주세요...','');
+    camTimer=setInterval(scanFrame,300);
+  } catch(e){ setScanSt('❌ 카메라 권한이 필요합니다','err'); }
+}
+
+function stopCam(){
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  clearInterval(camTimer);
+  const w=document.getElementById('scanWrap'); if(w) w.style.display='none';
+  const b=document.getElementById('btnCam'); if(b) b.disabled=false;
+  if(!qrVerified) setScanSt('📷 카메라 버튼을 눌러 스캔하세요','');
+}
+
+function scanFrame(){
+  const v=document.getElementById('preview');
+  if(!v||v.readyState!==v.HAVE_ENOUGH_DATA) return;
+  const c=document.createElement('canvas');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  const img=c.getContext('2d').getImageData(0,0,c.width,c.height);
+  const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+  if(code){
+    const expected=makeToken(curRole);
+    if(code.data===expected){
+      qrVerified=true; stopCam();
+      setScanSt('✅ 인증 완료! 이름을 선택하세요','ok');
+      document.getElementById('s1').classList.add('step-ok');
+      document.getElementById('s1n').classList.add('done');
+      document.getElementById('s2').classList.remove('locked');
+      renderNameGrid();
+    } else if(code.data.startsWith('AL-')||code.data.startsWith('ST-')){
+      setScanSt(`❌ ${curRole==='alba'?'알바생':'직원'} QR을 스캔하세요`,'err');
+    } else {
+      setScanSt('❌ 유효하지 않은 QR입니다','err');
+    }
+  }
+}
+
+function setScanSt(msg,cls){
+  const el=document.getElementById('scanSt');
+  if(el){el.textContent=msg;el.className='sst'+(cls?' '+cls:'');}
+}
+
+// ════════════════════════════════════════
+//  NAME GRID
+// ════════════════════════════════════════
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+
+function getTodayRec(name,role){
+  return S.records.find(r=>r.name===name&&r.role===role&&r.date===todayKey());
+}
+
+function renderNameGrid(){
+  const g=document.getElementById('nameGrid'); g.innerHTML='';
+  const list=curRole==='alba'?S.alba:S.staff;
+  if(!list.length){
+    g.innerHTML=`<div style="grid-column:1/-1;font-size:12px;color:var(--mu);padding:10px 0;">등록된 ${curRole==='alba'?'알바생':'직원'}이 없습니다</div>`;
+    return;
+  }
+  list.forEach(name=>{
+    const rec=getTodayRec(name,curRole);
+    let cls='';
+    if(rec&&rec.checkIn&&!rec.checkOut) cls=' di';
+    else if(rec&&rec.checkOut) cls=' do';
+    const btn=document.createElement('button');
+    btn.className='nbtn'+(selName===name?(curRole==='alba'?' sel-a':' sel-s'):'')+cls;
+    btn.textContent=name;
+    btn.onclick=()=>{selName=name;renderNameGrid();updateActions();};
+    g.appendChild(btn);
+  });
+}
+
+function updateActions(){
+  const bIn=document.getElementById('btnIn'),bOut=document.getElementById('btnOut');
+  const info=document.getElementById('selInfo'),s3=document.getElementById('s3');
+  if(!selName||!qrVerified){bIn.disabled=bOut.disabled=true;s3.classList.add('locked');info.textContent='';return;}
+  s3.classList.remove('locked');
+  const rec=getTodayRec(selName,curRole);
+  if(!rec||!rec.checkIn){bIn.disabled=false;bOut.disabled=true;info.textContent=`${selName} — 아직 출근 전`;}
+  else if(!rec.checkOut){bIn.disabled=true;bOut.disabled=false;info.textContent=`${selName} — 출근 ${rec.checkIn} ✅`;}
+  else{bIn.disabled=bOut.disabled=true;info.textContent=`${selName} — 오늘 근무 완료 (${rec.checkIn}~${rec.checkOut})`;}
+}
+
+function nowTime(){ return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+
+function doIn(){
+  if(!selName||!qrVerified) return;
+  if(getTodayRec(selName,curRole)){toast('이미 출근 처리되었습니다','err');return;}
+  S.records.push({name:selName,role:curRole,date:todayKey(),checkIn:nowTime(),checkOut:null,event:S.event.name});
+  save();renderNameGrid();updateActions();
+  toast(`${selName} 출근 완료 ✅`,'ok');
+}
+
+function doOut(){
+  if(!selName||!qrVerified) return;
+  const rec=getTodayRec(selName,curRole);
+  if(!rec||!rec.checkIn){toast('출근 기록이 없습니다','err');return;}
+  if(rec.checkOut){toast('이미 퇴근 처리되었습니다','err');return;}
+  rec.checkOut=nowTime(); save();renderNameGrid();updateActions();
+  toast(`${selName} 퇴근 완료 🚪 (${calcDur(rec.checkIn,rec.checkOut)})`,'ok');
+}
+
+// ════════════════════════════════════════
+//  TIME / DURATION UTILS
+// ════════════════════════════════════════
+function t2m(t){
+  if(!t) return 0;
+  let s=t.replace(/오전\s?|오후\s?/g,'');
+  let[h,m]=s.split(':').map(Number);
+  if(t.includes('오후')&&h!==12) h+=12;
+  if(t.includes('오전')&&h===12) h=0;
+  return h*60+m;
+}
+function calcDur(a,b){
+  if(!a||!b) return '-';
+  const d=t2m(b)-t2m(a); if(d<=0) return '-';
+  const h=Math.floor(d/60),m=d%60;
+  return h>0?`${h}시간 ${m}분`:`${m}분`;
+}
+function durMins(a,b){ if(!a||!b) return 0; const d=t2m(b)-t2m(a); return d>0?d:0; }
+
+// 야간 구간 계산 (분 단위)
+function nightMins(inT,outT){
+  if(!inT||!outT) return 0;
+  const inM=t2m(inT), outM=t2m(outT);
+  // 야간: 22:00(1320) ~ 다음날 06:00(360+1440=1800 → 360)
+  // 단순화: 22시 이후 또는 6시 이전 구간
+  let night=0;
+  const nightStart=22*60, nightEnd=6*60;
+  // 22~24
+  if(outM>nightStart) night+=Math.min(outM,24*60)-Math.max(inM,nightStart);
+  // 0~6
+  if(inM<nightEnd) night+=Math.min(outM,nightEnd)-Math.max(inM,0);
+  return Math.max(0,night);
+}
+
+// 주말 여부
+function isWeekend(dateStr){
+  const d=new Date(dateStr); return d.getDay()===0||d.getDay()===6;
+}
+
+// ════════════════════════════════════════
+//  TAX CALCULATION (사업소득 원천징수)
+// ════════════════════════════════════════
+function calcTax(totalPay){
+  // 소득세: 인건비 × 3%, 10원 단위 절삭(ROUNDDOWN)
+  // 면제: 인건비 × 3% <= 1000 이면 소득세 0 (인건비 ~33,333원 이하)
+  // 지방소득세: 소득세 × 10%, 10원 단위 절삭
+  const raw3pct=totalPay*0.03;
+  let incomeTax=0, localTax=0;
+  if(raw3pct>1000){
+    incomeTax=Math.floor(raw3pct/10)*10;
+    localTax=Math.floor(incomeTax*0.1/10)*10;
+  }
+  return {incomeTax, localTax, totalTax:incomeTax+localTax};
+}
+
+// ════════════════════════════════════════
+//  PAY CALCULATION
+// ════════════════════════════════════════
+function calcAlbaPay(recs){
+  const p=S.pay;
+  const rate=p.albaRate||11000;
+  const baseH=p.albaBase||8;
+  let basicPay=0, overPay=0;
+  recs.forEach(r=>{
+    if(!r.checkIn||!r.checkOut) return;
+    let mins=durMins(r.checkIn,r.checkOut);
+    mins=Math.max(0,mins-60); // 휴게 1시간 차감
+    const hours=mins/60;
+    if(hours<=baseH){
+      basicPay+=hours*rate;
+    } else {
+      basicPay+=baseH*rate;
+      overPay+=(hours-baseH)*rate*1.5;
+    }
+  });
+  const total=Math.round(basicPay+overPay);
+  const tax=calcTax(total);
+  return {basicPay:Math.round(basicPay),overPay:Math.round(overPay),total,
+    incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax};
+}
+
+function calcStaffPay(recs){
+  const p=S.pay;
+  const wdRate=p.staffWeekday||15000;
+  const weRate=p.staffWeekend||20000;
+  const workStart=p.staffWorkStart||'09:00';
+  const workEnd=p.staffWorkEnd||'18:00';
+  const [sh,sm]=(workStart||'09:00').split(':').map(Number);
+  const [eh,em]=(workEnd||'18:00').split(':').map(Number);
+  const regularStart=sh*60+(sm||0);
+  const regularEnd=eh*60+(em||0);
+  let basicPay=0, overPay=0;
+  recs.forEach(r=>{
+    if(!r.checkIn||!r.checkOut) return;
+    const inM=t2m(r.checkIn), outM=t2m(r.checkOut);
+    const rate=isWeekend(r.date)?weRate:wdRate;
+    let overMins=0;
+    if(outM>regularEnd) overMins+=outM-Math.max(inM,regularEnd);
+    if(inM<regularStart) overMins+=Math.min(outM,regularStart)-inM;
+    const nMins=nightMins(r.checkIn,r.checkOut);
+    const normalOver=Math.max(0,overMins-nMins);
+    const nightOver=nMins;
+    overPay+=normalOver/60*rate + nightOver/60*rate*1.5;
+  });
+  const total=Math.round(overPay);
+  const tax=calcTax(total);
+  return {basicPay:Math.round(basicPay),overPay:Math.round(overPay),total,
+    incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax};
+}
+
+function fmt(n){ return n.toLocaleString('ko-KR')+'원'; }
+
+// ════════════════════════════════════════
+//  ADMIN: TODAY
+// ════════════════════════════════════════
+function renderToday(){
+  const today=todayKey();
+  const recs=S.records.filter(r=>r.date===today);
+  const albaIn=recs.filter(r=>r.role==='alba'&&r.checkIn&&!r.checkOut).length;
+  const staffIn=recs.filter(r=>r.role==='staff'&&r.checkIn&&!r.checkOut).length;
+  document.getElementById('todayStats').innerHTML=`
+    <div class="scard"><div class="sv">${albaIn}</div><div class="slbl">알바생 근무중</div></div>
+    <div class="scard"><div class="sv">${staffIn}</div><div class="slbl">직원 근무중</div></div>
+    <div class="scard"><div class="sv">${S.alba.length+S.staff.length}</div><div class="slbl">총 인원</div></div>
+    <div class="scard"><div class="sv">${S.alba.length+S.staff.length-recs.filter(r=>r.checkIn).length}</div><div class="slbl">미출근</div></div>
+  `;
+  const list=document.getElementById('todayList');
+  const allPeople=[...S.alba.map(n=>({n,role:'alba'})),...S.staff.map(n=>({n,role:'staff'}))];
+  if(!allPeople.length){list.innerHTML='<div class="empty"><div class="ei">👥</div>등록된 인원이 없습니다</div>';return;}
+  list.innerHTML=allPeople.map(({n,role})=>{
+    const rec=recs.find(r=>r.name===n&&r.role===role);
+    const st=!rec?`<span class="badge b-abs">미출근</span>`
+      :!rec.checkOut?`<span class="badge b-in">근무중</span>`
+      :`<span class="badge b-out">퇴근</span>`;
+    const roleTag=role==='alba'?`<span class="badge b-a">알바</span>`:`<span class="badge b-s">직원</span>`;
+    return `<div class="ri">
+      <div class="rt">
+        <div><div style="display:flex;align-items:center;gap:6px;">${roleTag}<span class="rn">${n}</span>${st}</div></div>
+        ${rec&&rec.checkOut?`<div class="dc">⏱ ${calcDur(rec.checkIn,rec.checkOut)}</div>`:''}
+      </div>
+      ${rec&&rec.checkIn?`<div class="rtimes">
+        <div class="chip"><span class="dot dot-i"></span>${rec.checkIn}</div>
+        ${rec.checkOut?`<div class="chip"><span class="dot dot-o"></span>${rec.checkOut}</div>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  ADMIN: RECORDS
+// ════════════════════════════════════════
+function renderRecords(){
+  const ft=document.getElementById('filterType').value;
+  const fn=document.getElementById('filterName').value;
+  const fd=document.getElementById('filterDate').value;
+  // populate name filter
+  const sel=document.getElementById('filterName'), cur=sel.value;
+  sel.innerHTML='<option value="">전체 인원</option>';
+  [...S.alba,...S.staff].forEach(n=>sel.innerHTML+=`<option value="${n}"${n===cur?' selected':''}>${n}</option>`);
+  let recs=[...S.records].sort((a,b)=>b.date.localeCompare(a.date));
+  if(ft) recs=recs.filter(r=>r.role===ft);
+  if(fn) recs=recs.filter(r=>r.name===fn);
+  if(fd) recs=recs.filter(r=>r.date===fd);
+  const list=document.getElementById('recordsList');
+  if(!recs.length){list.innerHTML='<div class="empty"><div class="ei">📭</div>기록이 없습니다</div>';return;}
+  list.innerHTML=recs.map(r=>{
+    const st=!r.checkIn?`<span class="badge b-abs">미출근</span>`
+      :!r.checkOut?`<span class="badge b-in">근무중</span>`:`<span class="badge b-out">퇴근</span>`;
+    const roleTag=r.role==='alba'?`<span class="badge b-a">알바</span>`:`<span class="badge b-s">직원</span>`;
+    return `<div class="ri">
+      <div class="rt">
+        <div>${roleTag}<span class="rn" style="margin-left:5px;">${r.name}</span> ${st}
+          <div class="rm">${r.date}${r.event?' · '+r.event:''}</div>
+        </div>
+        ${r.checkOut?`<div class="dc">⏱ ${calcDur(r.checkIn,r.checkOut)}</div>`:''}
+      </div>
+      ${r.checkIn?`<div class="rtimes">
+        <div class="chip"><span class="dot dot-i"></span>${r.checkIn}</div>
+        ${r.checkOut?`<div class="chip"><span class="dot dot-o"></span>${r.checkOut}</div>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function clearFilters(){
+  document.getElementById('filterType').value='';
+  document.getElementById('filterName').value='';
+  document.getElementById('filterDate').value='';
+  renderRecords();
+}
+
+// ════════════════════════════════════════
+//  ADMIN: PAY
+// ════════════════════════════════════════
+function renderPay(){
+  const list=document.getElementById('payList');
+  const allPeople=[...S.alba.map(n=>({n,role:'alba'})),...S.staff.map(n=>({n,role:'staff'}))];
+  if(!S.records.length){list.innerHTML='<div class="empty"><div class="ei">💰</div>출퇴근 기록이 없습니다</div>';return;}
+  list.innerHTML=allPeople.map(({n,role})=>{
+    const recs=S.records.filter(r=>r.name===n&&r.role===role&&r.checkOut);
+    if(!recs.length) return `<div class="ri"><div class="rt"><div style="display:flex;align-items:center;gap:6px;"><span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span><span class="rn">${n}</span><span class="badge b-abs">기록없음</span></div></div></div>`;
+    const pay=role==='alba'?calcAlbaPay(recs):calcStaffPay(recs);
+    const days=[...new Set(recs.map(r=>r.date))].length;
+    const totalMins=recs.reduce((s,r)=>s+durMins(r.checkIn,r.checkOut),0);
+    const h=Math.floor(totalMins/60),m=totalMins%60;
+    return `<div class="ri">
+      <div class="rt">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span>
+          <span class="rn">${n}</span>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--mu);">${days}일 · ${h}시간 ${m}분</div>
+        </div>
+      </div>
+      <div class="pb">
+        <div class="pr"><span class="plbl">기본 급여</span><span class="pamt">${fmt(pay.basicPay)}</span></div>
+        ${pay.overPay>0?`<div class="pr"><span class="plbl">추가 수당 <span class="tag to">초과/야간</span></span><span class="pamt">${fmt(pay.overPay)}</span></div>`:''}
+        <div class="pr"><span class="plbl">소득세 (3%)</span><span class="pamt" style="color:var(--rd);">-${fmt(pay.incomeTax)}</span></div>
+        <div class="pr"><span class="plbl">지방소득세 (10%)</span><span class="pamt" style="color:var(--rd);">-${fmt(pay.localTax)}</span></div>
+        <div class="pr ptot"><span class="plbl">총 지급액</span><span class="ptot-amt ${role==='staff'?'st':''}">${fmt(pay.net)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  PERSONAL FILE UPLOAD & PAYROLL EXPORT
+// ════════════════════════════════════════
+function handlePersonalFile(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const wb=XLSX.read(ev.target.result,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+    // skip header row
+    personalData=rows.slice(1).filter(r=>r[0]).map(r=>({
+      name:String(r[0]||'').trim(),
+      phone:String(r[1]||''),
+      ssn:String(r[2]||''),
+      bank:String(r[3]||''),
+      account:String(r[4]||'')
+    }));
+    showMatchPreview();
+    document.getElementById('matchPreview').style.display='block';
+    toast(`${personalData.length}명 데이터 로드됨`,'ok');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showMatchPreview(){
+  const allPeople=[...S.alba.map(n=>({n,role:'alba'})),...S.staff.map(n=>({n,role:'staff'}))];
+  let html='';
+  allPeople.forEach(({n,role})=>{
+    const found=personalData.find(p=>p.name===n);
+    const roleTag=`<span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span>`;
+    html+=`<div class="match-row">
+      <span>${roleTag} ${n}</span>
+      ${found?`<span class="match-ok">✅ 매칭됨</span>`:`<span class="match-fail">❌ 개인정보 없음</span>`}
+    </div>`;
+  });
+  document.getElementById('matchList').innerHTML=html;
+}
+
+function downloadPersonalTemplate(){
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([
+    ['이름','전화번호','주민번호','은행명','계좌번호'],
+    ['홍길동','010-1234-5678','900101-1234567','국민은행','123456-78-901234'],
+  ]);
+  ws['!cols']=[{wch:12},{wch:16},{wch:16},{wch:10},{wch:22}];
+  XLSX.utils.book_append_sheet(wb,ws,'개인정보');
+  XLSX.writeFile(wb,'개인정보_양식.xlsx');
+}
+
+function exportPayrollXlsx(role){
+  const people=role==='alba'?S.alba:S.staff;
+  if(!people.length){toast('등록된 인원이 없습니다','err');return;}
+
+  const wb=XLSX.utils.book_new();
+  const eventName=S.event.name||'행사';
+  const today=todayKey();
+
+  // 날짜 목록 수집
+  const allDates=[...new Set(S.records.filter(r=>r.role===role).map(r=>r.date))].sort();
+
+  // ── 합계 행 먼저 ──
+  const aoa=[];
+
+  // 타이틀
+  aoa.push([`${eventName} ${role==='alba'?'알바생':'직원'} 급여 지급표`]);
+  aoa.push([`추출일: ${today}`]);
+  aoa.push([]); // 빈 행
+
+  // 헤더
+  const header=[
+    '이름','전화번호','주민번호','은행명','계좌번호',
+    ...allDates.flatMap(d=>[`${d} 출근`,`${d} 퇴근`]),
+    '총 근무시간(h)','기본급여','추가수당','총급여','소득세(3%)','지방소득세','공제계','차인지급액'
+  ];
+  aoa.push(header);
+
+  // 데이터 수집
+  const dataRows=[];
+  let sumBasic=0,sumOver=0,sumTotal=0,sumIncomeTax=0,sumLocalTax=0,sumTax=0,sumNet=0,sumMins=0;
+
+  people.forEach(name=>{
+    const recs=S.records.filter(r=>r.name===name&&r.role===role);
+    const pInfo=personalData.find(p=>p.name===name)||{phone:'',ssn:'',bank:'',account:''};
+    const pay=role==='alba'?calcAlbaPay(recs.filter(r=>r.checkOut)):calcStaffPay(recs.filter(r=>r.checkOut));
+    const totalMins=recs.filter(r=>r.checkOut).reduce((s,r)=>s+durMins(r.checkIn,r.checkOut),0);
+    const totalH=Math.round(totalMins/60*10)/10;
+
+    const row=[
+      name, pInfo.phone, pInfo.ssn, pInfo.bank, pInfo.account,
+      ...allDates.flatMap(d=>{
+        const rec=recs.find(r=>r.date===d);
+        return [rec?.checkIn||'',rec?.checkOut||''];
+      }),
+      totalH, pay.basicPay, pay.overPay, pay.total, pay.incomeTax, pay.localTax, pay.tax, pay.net
+    ];
+    dataRows.push(row);
+    sumBasic+=pay.basicPay; sumOver+=pay.overPay;
+    sumTotal+=pay.total; sumIncomeTax+=pay.incomeTax; sumLocalTax+=pay.localTax;
+    sumTax+=pay.tax; sumNet+=pay.net;
+    sumMins+=totalMins;
+  });
+
+  // 합계 행 (상단 삽입 — header 바로 다음)
+  const sumRow=[
+    '【합계】','','','','',
+    ...allDates.flatMap(()=>['','']),
+    Math.round(sumMins/60*10)/10,sumBasic,sumOver,sumTotal,sumIncomeTax,sumLocalTax,sumTax,sumNet
+  ];
+  aoa.push(sumRow);
+
+  // 데이터 행
+  dataRows.forEach(r=>aoa.push(r));
+
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+
+  // 열 너비
+  const colW=[12,14,16,10,22,...allDates.flatMap(()=>[12,12]),8,12,12,12,10,10,10,12];
+  ws['!cols']=colW.map(w=>({wch:w}));
+
+  // 병합: 타이틀
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:header.length-1}}];
+
+  XLSX.utils.book_append_sheet(wb,ws,role==='alba'?'알바생 지급표':'직원 지급표');
+  XLSX.writeFile(wb,`${eventName}_${role==='alba'?'알바생':'직원'}_지급표_${today}.xlsx`);
+  toast(`${role==='alba'?'알바생':'직원'} 지급표 저장됨 📥`,'ok');
+  // 개인정보 메모리 소멸
+  personalData=[];
+  document.getElementById('matchPreview').style.display='none';
+  document.getElementById('personalFile').value='';
+}
+
+// ════════════════════════════════════════
+//  ADMIN: STAFF LISTS
+// ════════════════════════════════════════
+function renderStaffLists(){
+  ['alba','staff'].forEach(role=>{
+    const list=document.getElementById(role+'List');
+    const arr=role==='alba'?S.alba:S.staff;
+    if(!arr.length){list.innerHTML=`<div class="empty" style="padding:16px;"><div class="ei">👤</div>없음</div>`;return;}
+    list.innerHTML=arr.map((n,i)=>`
+      <div class="si">
+        <span style="font-weight:500;">👤 ${n}</span>
+        <button class="bdel" onclick="removePerson('${role}',${i})">삭제</button>
+      </div>`).join('');
+  });
+}
+
+function addPerson(role){
+  const inp=document.getElementById(role==='alba'?'newAlba':'newStaff');
+  const name=inp.value.trim(); if(!name) return;
+  const arr=role==='alba'?S.alba:S.staff;
+  if(arr.includes(name)){toast('이미 등록된 이름입니다','err');return;}
+  arr.push(name); inp.value=''; save(); renderStaffLists(); renderNameGrid();
+  toast(`${name} 추가 ✅`,'ok');
+}
+
+function removePerson(role,i){
+  const arr=role==='alba'?S.alba:S.staff;
+  if(!confirm(`"${arr[i]}"을(를) 삭제하시겠습니까?`)) return;
+  arr.splice(i,1); save(); renderStaffLists(); renderNameGrid();
+  toast('삭제됨','err');
+}
+
+// ════════════════════════════════════════
+//  ADMIN: SETTINGS
+// ════════════════════════════════════════
+function loadSettings(){
+  document.getElementById('evNameInput').value=S.event.name||'';
+  document.getElementById('evStart').value=S.event.start||'';
+  document.getElementById('evEnd').value=S.event.end||'';
+  document.getElementById('albaRate').value=S.pay.albaRate||11000;
+  document.getElementById('albaBase').value=S.pay.albaBase||8;
+  document.getElementById('staffWeekday').value=S.pay.staffWeekday||15000;
+  document.getElementById('staffWeekend').value=S.pay.staffWeekend||20000;
+  document.getElementById('staffWorkStart').value=S.pay.staffWorkStart||'09:00';
+  document.getElementById('staffWorkEnd').value=S.pay.staffWorkEnd||'18:00';
+  document.getElementById('sheetUrl').value=S.sheetUrl||'';
+}
+
+function saveEvent(){
+  S.event.name=document.getElementById('evNameInput').value.trim();
+  S.event.start=document.getElementById('evStart').value;
+  S.event.end=document.getElementById('evEnd').value;
+  save(); updateAdminSub(); toast('행사 정보 저장됨 ✅','ok');
+}
+
+function savePaySettings(){
+  S.pay.albaRate=parseInt(document.getElementById('albaRate').value)||11000;
+  S.pay.albaBase=parseInt(document.getElementById('albaBase').value)||8;
+  S.pay.staffWeekday=parseInt(document.getElementById('staffWeekday').value)||15000;
+  S.pay.staffWeekend=parseInt(document.getElementById('staffWeekend').value)||20000;
+  S.pay.staffWorkStart=document.getElementById('staffWorkStart').value||'09:00';
+  S.pay.staffWorkEnd=document.getElementById('staffWorkEnd').value||'18:00';
+  save(); toast('급여 설정 저장됨 ✅','ok');
+}
+
+function changePw(role){
+  const id=role==='super'?'newSuperPw':'newPw';
+  const pw=document.getElementById(id).value.trim();
+  if(!pw){toast('비밀번호를 입력하세요','err');return;}
+  if(role==='super') S.superPw=pw;
+  else S.adminPw=pw;
+  save(); document.getElementById(id).value='';
+  toast(`${role==='super'?'총괄':'일반'} 비밀번호 변경됨 🔐`,'ok');
+}
+
+function clearAll(){
+  if(!confirm('모든 출퇴근 기록을 삭제하시겠습니까?')) return;
+  S.records=[]; save(); toast('전체 기록 삭제됨','err');
+}
+
+// ════════════════════════════════════════
+//  GOOGLE SHEETS
+// ════════════════════════════════════════
+function updateSyncStatus(){
+  const connected=!!S.sheetUrl;
+  document.getElementById('syncDot').className='sdot '+(connected?'ok':'no');
+  document.getElementById('syncMsg').textContent=connected?'Google Sheets 연결됨':'Google Sheets 미연결';
+}
+
+async function saveSheetUrl(){
+  S.sheetUrl=document.getElementById('sheetUrl').value.trim();
+  save(); if(!S.sheetUrl){toast('URL을 입력하세요','err');return;}
+  try{
+    const r=await fetch(S.sheetUrl+'?action=ping');
+    const d=await r.json();
+    if(d.status==='ok'){toast('시트 연결 성공 ☁️','ok');updateSyncStatus();}
+    else throw new Error();
+  } catch{ toast('연결 실패. URL을 확인하세요','err'); }
+}
+
+async function loadFromSheets(){
+  if(!S.sheetUrl){toast('먼저 시트 URL을 설정하세요','err');return;}
+  try{
+    const r=await fetch(S.sheetUrl+'?action=getStaff');
+    const d=await r.json();
+    if(d.alba) S.alba=d.alba;
+    if(d.staff) S.staff=d.staff;
+    save(); renderStaffLists(); renderNameGrid();
+    toast('명단 불러오기 완료','ok');
+  } catch{ toast('불러오기 실패','err'); }
+}
+
+async function syncSheets(){
+  if(!S.sheetUrl){toast('먼저 시트 URL을 설정하세요','err');return;}
+  try{
+    const r=await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({action:'syncRecords',records:S.records})});
+    const d=await r.json();
+    if(d.status==='ok') toast('시트 동기화 완료 ☁️','ok');
+    else throw new Error();
+  } catch{ toast('동기화 실패','err'); }
+}
+
+function exportCSV(){
+  if(!S.records.length){toast('내보낼 데이터가 없습니다','err');return;}
+  const rows=[['역할','행사','이름','날짜','출근','퇴근','근무시간']];
+  S.records.forEach(r=>rows.push([r.role==='alba'?'알바생':'직원',r.event||'',r.name,r.date,r.checkIn||'',r.checkOut||'',calcDur(r.checkIn,r.checkOut)]));
+  const bom='\uFEFF';
+  const csv=bom+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`출퇴근기록_${todayKey()}.csv`; a.click();
+  toast('CSV 저장 완료 📥','ok');
+}
+
+// ════════════════════════════════════════
+//  GUIDE MODAL
+// ════════════════════════════════════════
+function showGuide(){
+  document.getElementById('guideContent').innerHTML=`
+  <div style="display:flex;flex-direction:column;gap:10px;">
+  ${[
+    ['STEP 1','구글 시트 사본 만들기','구글 드라이브에서 템플릿 시트를 열고 <b>파일 → 사본 만들기</b>로 복사하세요. 행사마다 반복합니다.'],
+    ['STEP 2','Apps Script 열기','복사한 시트에서 <b>확장 프로그램 → Apps Script</b>를 클릭하세요.'],
+    ['STEP 3','코드 붙여넣기','기존 코드를 지우고 아래 코드를 붙여넣고 저장하세요.<div style="background:#000;border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:#f7c94b;line-height:1.7;margin-top:8px;overflow-x:auto;">function doGet(e){const a=e.parameter.action;if(a==="ping")return ok({status:"ok"});if(a==="getStaff"){const ss=SpreadsheetApp.getActiveSpreadsheet();const alba=ss.getSheetByName("알바생").getDataRange().getValues().slice(1).map(r=>r[0]).filter(Boolean);const staff=ss.getSheetByName("직원").getDataRange().getValues().slice(1).map(r=>r[0]).filter(Boolean);return ok({alba,staff});}return ok({});}<br>function doPost(e){const b=JSON.parse(e.postData.contents);const s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName("기록");if(b.action==="syncRecords"){s.clearContents();s.appendRow(["역할","이름","날짜","출근","퇴근","행사"]);b.records.forEach(r=>s.appendRow([r.role,r.name,r.date,r.checkIn||"",r.checkOut||"",r.event||""]));return ok({status:"ok"});}return ok({});}<br>function ok(d){return ContentService.createTextOutput(JSON.stringify(d)).setMimeType(ContentService.MimeType.JSON);}</div>'],
+    ['STEP 4','웹앱 배포','<b>배포 → 새 배포</b> → 유형: 웹앱 → 액세스: 모든 사용자 → 배포. URL을 복사하세요.'],
+    ['STEP 5','URL 입력','설정 탭의 <b>Apps Script URL</b>에 붙여넣고 저장하세요.'],
+    ['STEP 6','시트에 명단 작성','[알바생] 탭과 [직원] 탭의 A열에 이름을 입력하세요. 앱 직원 탭 → 시트에서 불러오기 클릭.'],
+  ].map(([n,t,d])=>`<div style="background:var(--sf2);border-left:3px solid var(--ac);border-radius:0 10px 10px 0;padding:13px 15px;">
+    <div style="font-size:10px;color:var(--ac);font-weight:900;letter-spacing:.1em;margin-bottom:3px;">${n}</div>
+    <div style="font-size:14px;font-weight:700;margin-bottom:4px;">${t}</div>
+    <div style="font-size:12px;color:var(--mu);line-height:1.7;">${d}</div>
+  </div>`).join('')}
+  </div>`;
+  document.getElementById('guideModal').style.display='block';
+}
+function hideGuide(){ document.getElementById('guideModal').style.display='none'; }
+
+// ════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════
+let toastT;
+function toast(msg,cls='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show '+cls;
+  clearTimeout(toastT); toastT=setTimeout(()=>t.className='',2600);
+}
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+setRole('alba');
+updateAdminSub();
+// Lucide 아이콘 초기화
+if(typeof lucide!=='undefined') lucide.createIcons();
+</script>
+</body>
+</html>
