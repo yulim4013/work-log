@@ -724,6 +724,17 @@ function goto(s){
   document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));
   document.getElementById('screen-'+s).classList.add('active');
   stopCam();
+  // 출퇴근 탭으로 돌아올 때 기존 QR 인증/선택 상태 UI 복원
+  if(s==='worker'){
+    if(qrVerified){
+      document.getElementById('s1').classList.add('step-ok');
+      document.getElementById('s1n').classList.add('done');
+      document.getElementById('s2').classList.remove('locked');
+      setScanSt('✅ 인증 완료! 이름을 선택하세요','ok');
+    }
+    renderNameGrid();
+    updateActions();
+  }
 }
 
 function adminLogin(){
@@ -1008,8 +1019,9 @@ function verifyPin(){
     return;
   }
   if(input===person.phone4){
+    const action=pendingAction;  // closePinModal이 pendingAction을 null로 바꾸기 전에 저장
     closePinModal();
-    if(pendingAction==='in') doIn(); else doOut();
+    if(action==='in') doIn(); else doOut();
   } else {
     toast('전화번호 뒷자리가 일치하지 않습니다','err');
     document.getElementById('pinInput').value='';
