@@ -407,24 +407,60 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 
     <!-- 직원 관리 탭 -->
     <div id="ap-staff" class="ap">
+      <!-- 마스터 엑셀 업로드 -->
+      <div class="sbox">
+        <div class="sbox-t">📂 마스터 엑셀 업로드</div>
+        <div style="font-size:11px;color:var(--mu);line-height:1.6;margin-bottom:10px;">
+          알바생/직원 2개 시트가 있는 엑셀 파일을 올리면 명단 + 급여 + 개인정보가 한번에 세팅됩니다.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="downloadMasterTemplate()">📄 양식 다운로드</button>
+          <label class="btn btn-ink" style="flex:1;padding:10px;font-size:12px;cursor:pointer;text-align:center;">
+            📂 업로드
+            <input type="file" accept=".xlsx,.xls" onchange="handleMasterUpload(event)" style="display:none;">
+          </label>
+        </div>
+      </div>
+
       <!-- 알바생 -->
-      <div class="sl">알바생</div>
-      <div class="fr" style="margin-bottom:10px;">
-        <input type="text" class="inp" id="newAlba" placeholder="이름 입력..." onkeydown="if(event.key==='Enter')addPerson('alba')">
-        <button class="btn btn-ac" style="padding:10px 16px;" onclick="addPerson('alba')">추가</button>
+      <div class="sl">알바생 추가</div>
+      <div class="sbox" style="padding:14px;">
+        <input type="text" class="inp" id="newAlbaName" placeholder="이름" style="margin-bottom:8px;">
+        <div class="fr" style="margin-bottom:8px;">
+          <select class="inp" id="newAlbaType" style="flex:1" onchange="document.getElementById('newAlbaRateLabel').textContent=this.value==='daily'?'일급':'시급';">
+            <option value="hourly">시급</option>
+            <option value="daily">일급</option>
+          </select>
+          <input type="number" class="inp" id="newAlbaRate" placeholder="11000" style="flex:2">
+        </div>
+        <div style="font-size:10px;color:var(--mu);margin-bottom:10px;"><span id="newAlbaRateLabel">시급</span> 원 단위 입력 (미입력 시 기본값 11,000원)</div>
+        <button class="btn btn-ac btn-full" onclick="addPerson('alba')">추가</button>
       </div>
-      <div id="albaList"></div>
+      <div id="albaList" style="margin-top:10px;"></div>
+
       <div class="div"></div>
+
       <!-- 직원 -->
-      <div class="sl">직원</div>
-      <div class="fr" style="margin-bottom:10px;">
-        <input type="text" class="inp" id="newStaff" placeholder="이름 입력..." onkeydown="if(event.key==='Enter')addPerson('staff')">
-        <button class="btn btn-bl" style="padding:10px 16px;" onclick="addPerson('staff')">추가</button>
+      <div class="sl">직원 추가</div>
+      <div class="sbox" style="padding:14px;">
+        <input type="text" class="inp" id="newStaffName" placeholder="이름" style="margin-bottom:8px;">
+        <select class="inp" id="newStaffType" style="margin-bottom:8px;" onchange="toggleStaffWeekend()">
+          <option value="hourly">시급</option>
+          <option value="daily">일급</option>
+        </select>
+        <div class="fr" style="margin-bottom:8px;">
+          <input type="number" class="inp" id="newStaffRate" placeholder="평일 시급 / 일급" style="flex:1">
+          <input type="number" class="inp" id="newStaffWeRate" placeholder="주말 (선택)" style="flex:1">
+        </div>
+        <div style="font-size:10px;color:var(--mu);margin-bottom:10px;">주말 시급은 평일과 다를 때만 입력. 일급이어도 주말 금액 다르면 입력 가능.</div>
+        <button class="btn btn-bl btn-full" onclick="addPerson('staff')">추가</button>
       </div>
-      <div id="staffList"></div>
+      <div id="staffList" style="margin-top:10px;"></div>
+
       <div class="div"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="loadFromSheets()">☁️ 시트에서 불러오기</button>
+        <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="pushStaffToSheets()">☁️ 시트로 내보내기</button>
       </div>
     </div>
 
@@ -531,8 +567,8 @@ let S = JSON.parse(localStorage.getItem('evt_v3') || 'null') || {
   adminPw: '1234',
   superPw: '5678',
   event: { name:'', start:'', end:'' },
-  alba: ['김민준','이서연','박지훈','최하은','정도윤'],
-  staff: ['이팀장','박과장','최대리'],
+  alba: [],
+  staff: [],
   records: [],
   sheetUrl: '',
   pay: {
@@ -541,7 +577,29 @@ let S = JSON.parse(localStorage.getItem('evt_v3') || 'null') || {
     staffWorkStart: '09:00', staffWorkEnd: '18:00'
   }
 };
+
+// 마이그레이션: 기존 이름 문자열 배열 → 객체 배열
+function migrateState(){
+  if(S.alba.length && typeof S.alba[0]==='string'){
+    const r=S.pay.albaRate||11000;
+    S.alba=S.alba.map(n=>({name:n,payType:'hourly',rate:r}));
+  }
+  if(S.staff.length && typeof S.staff[0]==='string'){
+    const wd=S.pay.staffWeekday||15000, we=S.pay.staffWeekend||20000;
+    S.staff=S.staff.map(n=>({name:n,payType:'hourly',rate:wd,weekendRate:we}));
+  }
+}
+migrateState();
+
 function save(){ localStorage.setItem('evt_v3', JSON.stringify(S)); }
+
+// 헬퍼: 이름 추출 + 인원 조회
+function personName(p){ return typeof p==='string'?p:p.name; }
+function findPerson(role,name){
+  const arr=role==='alba'?S.alba:S.staff;
+  return arr.find(p=>personName(p)===name);
+}
+function personList(role){ return role==='alba'?S.alba:S.staff; }
 
 let selName=null, curRole='alba', qrVerified=false;
 let camStream=null, camTimer=null;
@@ -769,12 +827,13 @@ function getTodayRec(name,role){
 
 function renderNameGrid(){
   const g=document.getElementById('nameGrid'); g.innerHTML='';
-  const list=curRole==='alba'?S.alba:S.staff;
+  const list=personList(curRole);
   if(!list.length){
     g.innerHTML=`<div style="grid-column:1/-1;font-size:12px;color:var(--mu);padding:10px 0;">등록된 ${curRole==='alba'?'알바생':'직원'}이 없습니다</div>`;
     return;
   }
-  list.forEach(name=>{
+  list.forEach(p=>{
+    const name=personName(p);
     const rec=getTodayRec(name,curRole);
     let cls='';
     if(rec&&rec.checkIn&&!rec.checkOut) cls=' di';
@@ -875,33 +934,60 @@ function calcTax(totalPay){
 // ════════════════════════════════════════
 //  PAY CALCULATION
 // ════════════════════════════════════════
-function calcAlbaPay(recs){
+function calcAlbaPay(recs, person){
   const p=S.pay;
-  const rate=p.albaRate||11000;
+  const rate=(person&&person.rate)||p.albaRate||11000;
   const baseH=p.albaBase||8;
+  const payType=(person&&person.payType)||'hourly';
   let basicPay=0, overPay=0;
-  recs.forEach(r=>{
-    if(!r.checkIn||!r.checkOut) return;
-    let mins=durMins(r.checkIn,r.checkOut);
-    mins=Math.max(0,mins-60); // 휴게 1시간 차감
-    const hours=mins/60;
-    if(hours<=baseH){
-      basicPay+=hours*rate;
-    } else {
-      basicPay+=baseH*rate;
-      overPay+=(hours-baseH)*rate*1.5;
-    }
-  });
+
+  if(payType==='daily'){
+    const days=new Set(recs.filter(r=>r.checkOut).map(r=>r.date)).size;
+    basicPay=days*rate;
+  } else {
+    recs.forEach(r=>{
+      if(!r.checkIn||!r.checkOut) return;
+      let mins=durMins(r.checkIn,r.checkOut);
+      mins=Math.max(0,mins-60);
+      const hours=mins/60;
+      if(hours<=baseH){
+        basicPay+=hours*rate;
+      } else {
+        basicPay+=baseH*rate;
+        overPay+=(hours-baseH)*rate*1.5;
+      }
+    });
+  }
+
   const total=Math.round(basicPay+overPay);
   const tax=calcTax(total);
   return {basicPay:Math.round(basicPay),overPay:Math.round(overPay),total,
-    incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax};
+    incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax,
+    payType};
 }
 
-function calcStaffPay(recs){
+function calcStaffPay(recs, person){
   const p=S.pay;
-  const wdRate=p.staffWeekday||15000;
-  const weRate=p.staffWeekend||20000;
+  const payType=(person&&person.payType)||'hourly';
+  const wdRate=(person&&person.rate)||p.staffWeekday||15000;
+  const weRate=(person&&person.weekendRate)||(person&&person.rate)||p.staffWeekend||20000;
+
+  if(payType==='daily'){
+    let basicPay=0;
+    const seen={};
+    recs.filter(r=>r.checkOut).forEach(r=>{
+      if(seen[r.date]) return;
+      seen[r.date]=true;
+      basicPay+=isWeekend(r.date)?weRate:wdRate;
+    });
+    const total=Math.round(basicPay);
+    const tax=calcTax(total);
+    return {basicPay:total,overPay:0,total,
+      incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax,
+      payType};
+  }
+
+  // 시급 (정규시간 외 수당만 계산)
   const workStart=p.staffWorkStart||'09:00';
   const workEnd=p.staffWorkEnd||'18:00';
   const [sh,sm]=(workStart||'09:00').split(':').map(Number);
@@ -924,7 +1010,8 @@ function calcStaffPay(recs){
   const total=Math.round(overPay);
   const tax=calcTax(total);
   return {basicPay:Math.round(basicPay),overPay:Math.round(overPay),total,
-    incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax};
+    incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax,
+    payType};
 }
 
 function fmt(n){ return n.toLocaleString('ko-KR')+'원'; }
@@ -944,7 +1031,7 @@ function renderToday(){
     <div class="scard"><div class="sv">${S.alba.length+S.staff.length-recs.filter(r=>r.checkIn).length}</div><div class="slbl">미출근</div></div>
   `;
   const list=document.getElementById('todayList');
-  const allPeople=[...S.alba.map(n=>({n,role:'alba'})),...S.staff.map(n=>({n,role:'staff'}))];
+  const allPeople=[...S.alba.map(p=>({n:personName(p),role:'alba'})),...S.staff.map(p=>({n:personName(p),role:'staff'}))];
   if(!allPeople.length){list.innerHTML='<div class="empty"><div class="ei">👥</div>등록된 인원이 없습니다</div>';return;}
   list.innerHTML=allPeople.map(({n,role})=>{
     const rec=recs.find(r=>r.name===n&&r.role===role);
@@ -975,7 +1062,7 @@ function renderRecords(){
   // populate name filter
   const sel=document.getElementById('filterName'), cur=sel.value;
   sel.innerHTML='<option value="">전체 인원</option>';
-  [...S.alba,...S.staff].forEach(n=>sel.innerHTML+=`<option value="${n}"${n===cur?' selected':''}>${n}</option>`);
+  [...S.alba,...S.staff].forEach(p=>{const n=personName(p);sel.innerHTML+=`<option value="${n}"${n===cur?' selected':''}>${n}</option>`;});
   let recs=[...S.records].sort((a,b)=>b.date.localeCompare(a.date));
   if(ft) recs=recs.filter(r=>r.role===ft);
   if(fn) recs=recs.filter(r=>r.name===fn);
@@ -1013,12 +1100,14 @@ function clearFilters(){
 // ════════════════════════════════════════
 function renderPay(){
   const list=document.getElementById('payList');
-  const allPeople=[...S.alba.map(n=>({n,role:'alba'})),...S.staff.map(n=>({n,role:'staff'}))];
+  const allPeople=[...S.alba.map(p=>({n:personName(p),role:'alba',person:p})),...S.staff.map(p=>({n:personName(p),role:'staff',person:p}))];
   if(!S.records.length){list.innerHTML='<div class="empty"><div class="ei">💰</div>출퇴근 기록이 없습니다</div>';return;}
-  list.innerHTML=allPeople.map(({n,role})=>{
+  list.innerHTML=allPeople.map(({n,role,person})=>{
     const recs=S.records.filter(r=>r.name===n&&r.role===role&&r.checkOut);
-    if(!recs.length) return `<div class="ri"><div class="rt"><div style="display:flex;align-items:center;gap:6px;"><span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span><span class="rn">${n}</span><span class="badge b-abs">기록없음</span></div></div></div>`;
-    const pay=role==='alba'?calcAlbaPay(recs):calcStaffPay(recs);
+    const payType=person.payType||'hourly';
+    const typeTag=payType==='daily'?'<span class="tag tn">일급</span>':'<span class="tag tw">시급</span>';
+    if(!recs.length) return `<div class="ri"><div class="rt"><div style="display:flex;align-items:center;gap:6px;"><span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span><span class="rn">${n}</span>${typeTag}<span class="badge b-abs">기록없음</span></div></div></div>`;
+    const pay=role==='alba'?calcAlbaPay(recs,person):calcStaffPay(recs,person);
     const days=[...new Set(recs.map(r=>r.date))].length;
     const totalMins=recs.reduce((s,r)=>s+durMins(r.checkIn,r.checkOut),0);
     const h=Math.floor(totalMins/60),m=totalMins%60;
@@ -1027,13 +1116,14 @@ function renderPay(){
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span class="badge ${role==='alba'?'b-a':'b-s'}">${role==='alba'?'알바':'직원'}</span>
           <span class="rn">${n}</span>
+          ${typeTag}
         </div>
         <div style="text-align:right;">
           <div style="font-size:11px;color:var(--mu);">${days}일 · ${h}시간 ${m}분</div>
         </div>
       </div>
       <div class="pb">
-        <div class="pr"><span class="plbl">기본 급여</span><span class="pamt">${fmt(pay.basicPay)}</span></div>
+        <div class="pr"><span class="plbl">${payType==='daily'?'일급 합계':'기본 급여'}</span><span class="pamt">${fmt(pay.basicPay)}</span></div>
         ${pay.overPay>0?`<div class="pr"><span class="plbl">추가 수당 <span class="tag to">초과/야간</span></span><span class="pamt">${fmt(pay.overPay)}</span></div>`:''}
         <div class="pr"><span class="plbl">소득세 (3%)</span><span class="pamt" style="color:var(--rd);">-${fmt(pay.incomeTax)}</span></div>
         <div class="pr"><span class="plbl">지방소득세 (10%)</span><span class="pamt" style="color:var(--rd);">-${fmt(pay.localTax)}</span></div>
@@ -1100,39 +1190,37 @@ function exportPayrollXlsx(role){
   const wb=XLSX.utils.book_new();
   const eventName=S.event.name||'행사';
   const today=todayKey();
-
-  // 날짜 목록 수집
   const allDates=[...new Set(S.records.filter(r=>r.role===role).map(r=>r.date))].sort();
 
-  // ── 합계 행 먼저 ──
   const aoa=[];
-
-  // 타이틀
   aoa.push([`${eventName} ${role==='alba'?'알바생':'직원'} 급여 지급표`]);
   aoa.push([`추출일: ${today}`]);
-  aoa.push([]); // 빈 행
+  aoa.push([]);
 
-  // 헤더
   const header=[
-    '이름','전화번호','주민번호','은행명','계좌번호',
+    '이름','전화번호','주민번호','은행명','계좌번호','급여타입','시급/일급','주말시급',
     ...allDates.flatMap(d=>[`${d} 출근`,`${d} 퇴근`]),
     '총 근무시간(h)','기본급여','추가수당','총급여','소득세(3%)','지방소득세','공제계','차인지급액'
   ];
   aoa.push(header);
 
-  // 데이터 수집
   const dataRows=[];
   let sumBasic=0,sumOver=0,sumTotal=0,sumIncomeTax=0,sumLocalTax=0,sumTax=0,sumNet=0,sumMins=0;
 
-  people.forEach(name=>{
+  people.forEach(person=>{
+    const name=personName(person);
+    const payType=person.payType||'hourly';
+    const rate=person.rate||0;
+    const weRate=person.weekendRate||'';
     const recs=S.records.filter(r=>r.name===name&&r.role===role);
-    const pInfo=personalData.find(p=>p.name===name)||{phone:'',ssn:'',bank:'',account:''};
-    const pay=role==='alba'?calcAlbaPay(recs.filter(r=>r.checkOut)):calcStaffPay(recs.filter(r=>r.checkOut));
+    const pInfo=personalData.find(pd=>pd.name===name)||{phone:'',ssn:'',bank:'',account:''};
+    const pay=role==='alba'?calcAlbaPay(recs.filter(r=>r.checkOut),person):calcStaffPay(recs.filter(r=>r.checkOut),person);
     const totalMins=recs.filter(r=>r.checkOut).reduce((s,r)=>s+durMins(r.checkIn,r.checkOut),0);
     const totalH=Math.round(totalMins/60*10)/10;
 
     const row=[
       name, pInfo.phone, pInfo.ssn, pInfo.bank, pInfo.account,
+      payType==='daily'?'일급':'시급', rate, weRate,
       ...allDates.flatMap(d=>{
         const rec=recs.find(r=>r.date===d);
         return [rec?.checkIn||'',rec?.checkOut||''];
@@ -1146,30 +1234,22 @@ function exportPayrollXlsx(role){
     sumMins+=totalMins;
   });
 
-  // 합계 행 (상단 삽입 — header 바로 다음)
   const sumRow=[
-    '【합계】','','','','',
+    '【합계】','','','','','','','',
     ...allDates.flatMap(()=>['','']),
     Math.round(sumMins/60*10)/10,sumBasic,sumOver,sumTotal,sumIncomeTax,sumLocalTax,sumTax,sumNet
   ];
   aoa.push(sumRow);
-
-  // 데이터 행
   dataRows.forEach(r=>aoa.push(r));
 
   const ws=XLSX.utils.aoa_to_sheet(aoa);
-
-  // 열 너비
-  const colW=[12,14,16,10,22,...allDates.flatMap(()=>[12,12]),8,12,12,12,10,10,10,12];
+  const colW=[12,14,16,10,22,8,10,10,...allDates.flatMap(()=>[12,12]),8,12,12,12,10,10,10,12];
   ws['!cols']=colW.map(w=>({wch:w}));
-
-  // 병합: 타이틀
   ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:header.length-1}}];
 
   XLSX.utils.book_append_sheet(wb,ws,role==='alba'?'알바생 지급표':'직원 지급표');
   XLSX.writeFile(wb,`${eventName}_${role==='alba'?'알바생':'직원'}_지급표_${today}.xlsx`);
   toast(`${role==='alba'?'알바생':'직원'} 지급표 저장됨 📥`,'ok');
-  // 개인정보 메모리 소멸
   personalData=[];
   document.getElementById('matchPreview').style.display='none';
   document.getElementById('personalFile').value='';
@@ -1178,33 +1258,125 @@ function exportPayrollXlsx(role){
 // ════════════════════════════════════════
 //  ADMIN: STAFF LISTS
 // ════════════════════════════════════════
+function formatRate(p){
+  if(!p.rate) return '-';
+  const type=p.payType==='daily'?'일':'시';
+  let s=`${type} ${p.rate.toLocaleString()}원`;
+  if(p.weekendRate && p.weekendRate!==p.rate) s+=` / 주말 ${p.weekendRate.toLocaleString()}원`;
+  return s;
+}
+
 function renderStaffLists(){
   ['alba','staff'].forEach(role=>{
     const list=document.getElementById(role+'List');
     const arr=role==='alba'?S.alba:S.staff;
     if(!arr.length){list.innerHTML=`<div class="empty" style="padding:16px;"><div class="ei">👤</div>없음</div>`;return;}
-    list.innerHTML=arr.map((n,i)=>`
-      <div class="si">
-        <span style="font-weight:500;">👤 ${n}</span>
-        <button class="bdel" onclick="removePerson('${role}',${i})">삭제</button>
-      </div>`).join('');
+    list.innerHTML=arr.map((p,i)=>{
+      const name=personName(p);
+      const rate=typeof p==='object'?formatRate(p):'-';
+      return `<div class="si">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;">👤 ${name}</div>
+          <div style="font-size:11px;color:var(--mu);margin-top:2px;">${rate}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="bdel" style="border-color:var(--bd);color:var(--mu);" onclick="editPerson('${role}',${i})">편집</button>
+          <button class="bdel" onclick="removePerson('${role}',${i})">삭제</button>
+        </div>
+      </div>`;
+    }).join('');
   });
 }
 
+function toggleStaffWeekend(){
+  // 일급일 때도 주말 칸 그대로 유지 (선택적)
+}
+
 function addPerson(role){
-  const inp=document.getElementById(role==='alba'?'newAlba':'newStaff');
-  const name=inp.value.trim(); if(!name) return;
+  if(role==='alba'){
+    const name=document.getElementById('newAlbaName').value.trim();
+    if(!name){toast('이름을 입력하세요','err');return;}
+    if(S.alba.some(p=>personName(p)===name)){toast('이미 등록된 이름입니다','err');return;}
+    const payType=document.getElementById('newAlbaType').value;
+    const rate=parseInt(document.getElementById('newAlbaRate').value)||S.pay.albaRate||11000;
+    S.alba.push({name,payType,rate});
+    document.getElementById('newAlbaName').value='';
+    document.getElementById('newAlbaRate').value='';
+  } else {
+    const name=document.getElementById('newStaffName').value.trim();
+    if(!name){toast('이름을 입력하세요','err');return;}
+    if(S.staff.some(p=>personName(p)===name)){toast('이미 등록된 이름입니다','err');return;}
+    const payType=document.getElementById('newStaffType').value;
+    const rate=parseInt(document.getElementById('newStaffRate').value)||S.pay.staffWeekday||15000;
+    const weRaw=document.getElementById('newStaffWeRate').value;
+    const obj={name,payType,rate};
+    if(weRaw){obj.weekendRate=parseInt(weRaw);}
+    S.staff.push(obj);
+    document.getElementById('newStaffName').value='';
+    document.getElementById('newStaffRate').value='';
+    document.getElementById('newStaffWeRate').value='';
+  }
+  save(); renderStaffLists(); renderNameGrid();
+  syncPersonToSheet(role,'add');
+  toast('추가 완료 ✅','ok');
+}
+
+function editPerson(role,i){
   const arr=role==='alba'?S.alba:S.staff;
-  if(arr.includes(name)){toast('이미 등록된 이름입니다','err');return;}
-  arr.push(name); inp.value=''; save(); renderStaffLists(); renderNameGrid();
-  toast(`${name} 추가 ✅`,'ok');
+  const p=arr[i];
+  const name=personName(p);
+  const type=p.payType||'hourly';
+  const rate=p.rate||0;
+  const newRate=prompt(`${name} — 급여 수정\n현재: ${type==='daily'?'일급':'시급'} ${rate.toLocaleString()}원\n\n새 금액 입력 (원):`, rate);
+  if(newRate===null) return;
+  const newRateNum=parseInt(newRate);
+  if(isNaN(newRateNum)){toast('숫자를 입력하세요','err');return;}
+  p.rate=newRateNum;
+  if(role==='staff'){
+    const curWe=p.weekendRate||'';
+    const newWe=prompt(`주말 시급/일급 (평일과 다를 때만, 비우면 삭제):`, curWe);
+    if(newWe===null) return;
+    if(newWe.trim()===''){delete p.weekendRate;}
+    else {const n=parseInt(newWe); if(!isNaN(n)) p.weekendRate=n;}
+  }
+  save(); renderStaffLists();
+  syncPersonToSheet(role,'update');
+  toast('수정 완료 ✅','ok');
 }
 
 function removePerson(role,i){
   const arr=role==='alba'?S.alba:S.staff;
-  if(!confirm(`"${arr[i]}"을(를) 삭제하시겠습니까?`)) return;
+  const name=personName(arr[i]);
+  if(!confirm(`"${name}"을(를) 삭제하시겠습니까?`)) return;
   arr.splice(i,1); save(); renderStaffLists(); renderNameGrid();
+  syncPersonToSheet(role,'remove');
   toast('삭제됨','err');
+}
+
+// 시트 자동 싱크 (에러 시 조용히 실패)
+async function syncPersonToSheet(role,action){
+  if(!S.sheetUrl) return;
+  try{
+    await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({
+      action:'syncStaff',
+      alba:S.alba,
+      staff:S.staff
+    })});
+  } catch(e){}
+}
+
+async function pushStaffToSheets(){
+  if(!S.sheetUrl){toast('먼저 시트 URL을 설정하세요','err');return;}
+  try{
+    const r=await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({
+      action:'syncStaff',
+      alba:S.alba,
+      staff:S.staff
+    })});
+    const d=await r.json();
+    if(d.status==='ok') toast('시트 내보내기 완료 ☁️','ok');
+    else throw new Error();
+  } catch{ toast('내보내기 실패','err'); }
 }
 
 // ════════════════════════════════════════
@@ -1280,11 +1452,98 @@ async function loadFromSheets(){
   try{
     const r=await fetch(S.sheetUrl+'?action=getStaff');
     const d=await r.json();
-    if(d.alba) S.alba=d.alba;
-    if(d.staff) S.staff=d.staff;
+    if(d.alba) S.alba=d.alba.map(normalizePerson);
+    if(d.staff) S.staff=d.staff.map(p=>normalizePerson(p,true));
     save(); renderStaffLists(); renderNameGrid();
     toast('명단 불러오기 완료','ok');
   } catch{ toast('불러오기 실패','err'); }
+}
+
+function normalizePerson(p,isStaff){
+  if(typeof p==='string') return {name:p,payType:'hourly',rate:isStaff?(S.pay.staffWeekday||15000):(S.pay.albaRate||11000)};
+  const obj={name:p.name,payType:p.payType||'hourly',rate:parseInt(p.rate)||0};
+  if(p.weekendRate) obj.weekendRate=parseInt(p.weekendRate);
+  return obj;
+}
+
+function downloadMasterTemplate(){
+  const wb=XLSX.utils.book_new();
+  const albaWs=XLSX.utils.aoa_to_sheet([
+    ['이름','급여타입','시급/일급','전화번호','주민번호','은행명','계좌번호'],
+    ['김민준','시급',11000,'010-1234-5678','900101-1234567','국민은행','123456-78-901234'],
+    ['박수퍼','시급',13000,'','','',''],
+    ['이일당','일급',100000,'','','','']
+  ]);
+  albaWs['!cols']=[{wch:10},{wch:10},{wch:12},{wch:16},{wch:16},{wch:10},{wch:22}];
+  XLSX.utils.book_append_sheet(wb,albaWs,'알바생');
+
+  const staffWs=XLSX.utils.aoa_to_sheet([
+    ['이름','급여타입','평일시급/일급','주말시급','전화번호','주민번호','은행명','계좌번호'],
+    ['이팀장','시급',20000,25000,'','','',''],
+    ['박과장','일급',150000,'','','','','']
+  ]);
+  staffWs['!cols']=[{wch:10},{wch:10},{wch:14},{wch:12},{wch:16},{wch:16},{wch:10},{wch:22}];
+  XLSX.utils.book_append_sheet(wb,staffWs,'직원');
+
+  XLSX.writeFile(wb,'work-log_마스터양식.xlsx');
+  toast('양식 다운로드 완료','ok');
+}
+
+function handleMasterUpload(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const wb=XLSX.read(ev.target.result,{type:'array'});
+    const newAlba=[];
+    const newStaff=[];
+    const newPersonal=[];
+
+    // 알바생 시트
+    const albaSheet=wb.Sheets['알바생'];
+    if(albaSheet){
+      const rows=XLSX.utils.sheet_to_json(albaSheet,{header:1});
+      rows.slice(1).forEach(r=>{
+        if(!r[0]) return;
+        const name=String(r[0]).trim();
+        const payType=String(r[1]||'시급').includes('일')?'daily':'hourly';
+        const rate=parseInt(r[2])||S.pay.albaRate||11000;
+        newAlba.push({name,payType,rate});
+        newPersonal.push({name,phone:String(r[3]||''),ssn:String(r[4]||''),bank:String(r[5]||''),account:String(r[6]||'')});
+      });
+    }
+
+    // 직원 시트
+    const staffSheet=wb.Sheets['직원'];
+    if(staffSheet){
+      const rows=XLSX.utils.sheet_to_json(staffSheet,{header:1});
+      rows.slice(1).forEach(r=>{
+        if(!r[0]) return;
+        const name=String(r[0]).trim();
+        const payType=String(r[1]||'시급').includes('일')?'daily':'hourly';
+        const rate=parseInt(r[2])||S.pay.staffWeekday||15000;
+        const obj={name,payType,rate};
+        if(r[3]) obj.weekendRate=parseInt(r[3]);
+        newStaff.push(obj);
+        newPersonal.push({name,phone:String(r[4]||''),ssn:String(r[5]||''),bank:String(r[6]||''),account:String(r[7]||'')});
+      });
+    }
+
+    if(!newAlba.length && !newStaff.length){
+      toast('알바생/직원 시트를 찾지 못했습니다','err');
+      return;
+    }
+
+    S.alba=newAlba;
+    S.staff=newStaff;
+    personalData=newPersonal.filter(p=>p.phone||p.ssn||p.bank||p.account);
+    save();
+    renderStaffLists();
+    renderNameGrid();
+    syncPersonToSheet('','full');
+    toast(`알바생 ${newAlba.length}명, 직원 ${newStaff.length}명 로드 완료 ✅`,'ok');
+    e.target.value='';
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 async function syncSheets(){
