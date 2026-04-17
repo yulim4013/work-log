@@ -279,6 +279,12 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       </div>
       <div id="selInfo" style="font-size:11px;color:var(--mu);text-align:center;margin-top:10px;min-height:16px;"></div>
     </div>
+
+    <!-- 내 출퇴근 기록 -->
+    <div class="sc" id="s4" style="display:none;">
+      <div class="stitle" style="margin-bottom:12px;">📋 내 출퇴근 기록</div>
+      <div id="myRecords"></div>
+    </div>
   </div>
 </div>
 
@@ -930,12 +936,48 @@ function renderNameGrid(){
 function updateActions(){
   const bIn=document.getElementById('btnIn'),bOut=document.getElementById('btnOut');
   const info=document.getElementById('selInfo'),s3=document.getElementById('s3');
-  if(!selName||!qrVerified){bIn.disabled=bOut.disabled=true;s3.classList.add('locked');info.textContent='';return;}
+  if(!selName||!qrVerified){bIn.disabled=bOut.disabled=true;s3.classList.add('locked');info.textContent='';renderMyRecords();return;}
   s3.classList.remove('locked');
   const rec=getTodayRec(selName,curRole);
   if(!rec||!rec.checkIn){bIn.disabled=false;bOut.disabled=true;info.textContent=`${selName} — 아직 출근 전`;}
   else if(!rec.checkOut){bIn.disabled=true;bOut.disabled=false;info.textContent=`${selName} — 출근 ${rec.checkIn} ✅`;}
   else{bIn.disabled=bOut.disabled=true;info.textContent=`${selName} — 오늘 근무 완료 (${rec.checkIn}~${rec.checkOut})`;}
+  renderMyRecords();
+}
+
+function renderMyRecords(){
+  const box=document.getElementById('s4');
+  const list=document.getElementById('myRecords');
+  if(!selName||!qrVerified){box.style.display='none';return;}
+  box.style.display='block';
+  const recs=S.records.filter(r=>r.name===selName&&r.role===curRole).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!recs.length){list.innerHTML='<div style="text-align:center;padding:24px;color:var(--mu);font-size:13px;">아직 기록이 없습니다</div>';return;}
+  const totalMins=recs.reduce((s,r)=>s+durMins(r.checkIn,r.checkOut),0);
+  const totalH=Math.floor(totalMins/60);
+  const totalM=totalMins%60;
+  const completedDays=recs.filter(r=>r.checkOut).length;
+  list.innerHTML=`
+    <div style="background:linear-gradient(135deg,rgba(99,102,241,0.08) 0%,rgba(139,92,246,0.08) 100%);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:10px;text-align:center;">
+      <div style="font-size:11px;color:var(--mu);margin-bottom:4px;">누적 근무</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--ac);line-height:1;letter-spacing:.04em;">${totalH}<span style="font-size:16px;">시간</span> ${totalM}<span style="font-size:16px;">분</span></div>
+      <div style="font-size:11px;color:var(--mu);margin-top:6px;">${completedDays}일 근무 완료 · 총 ${recs.length}일 기록</div>
+    </div>
+    ${recs.map(r=>{
+      const dur=r.checkOut?calcDur(r.checkIn,r.checkOut):'<span style="color:var(--gn);">근무중</span>';
+      const dt=new Date(r.date);
+      const wd=['일','월','화','수','목','금','토'][dt.getDay()];
+      return `<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:6px;">
+        <div style="font-size:11px;color:var(--mu);margin-bottom:6px;font-weight:600;">${r.date} (${wd})</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="chip" style="background:var(--gn-d);color:var(--gn);"><span class="dot dot-i"></span>출 ${r.checkIn}</span>
+            ${r.checkOut?`<span class="chip" style="background:var(--rd-d);color:var(--rd);"><span class="dot dot-o"></span>퇴 ${r.checkOut}</span>`:''}
+          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink);">${dur}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  `;
 }
 
 function nowTime(){ return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
@@ -945,8 +987,10 @@ let pendingAction=null;
 function tryAction(action){
   if(!selName||!qrVerified) return;
   const person=findPerson(curRole,selName);
-  // phone4가 없으면 바로 진행 (엑셀 업로드 안 한 경우 구 호환)
-  if(!person||!person.phone4){
+  if(!person){toast('인원 정보 없음','err');return;}
+  if(!person.phone4){
+    // phone4 미등록 — 진단 토스트 후 통과
+    toast(`${selName}: 전화번호 미등록 (관리자 등록 필요)`,'warn');
     if(action==='in') doIn(); else doOut();
     return;
   }
@@ -979,9 +1023,10 @@ function closePinModal(){
 function doIn(){
   if(!selName||!qrVerified) return;
   if(getTodayRec(selName,curRole)){toast('이미 출근 처리되었습니다','err');return;}
-  S.records.push({name:selName,role:curRole,date:todayKey(),checkIn:nowTime(),checkOut:null,event:S.event.name});
+  const t=nowTime();
+  S.records.push({name:selName,role:curRole,date:todayKey(),checkIn:t,checkOut:null,event:S.event.name});
   save();renderNameGrid();updateActions();
-  toast(`${selName} 출근 완료 ✅`,'ok');
+  toast(`${selName} 출근 ✅ ${t}`,'ok');
 }
 
 function doOut(){
@@ -990,7 +1035,7 @@ function doOut(){
   if(!rec||!rec.checkIn){toast('출근 기록이 없습니다','err');return;}
   if(rec.checkOut){toast('이미 퇴근 처리되었습니다','err');return;}
   rec.checkOut=nowTime(); save();renderNameGrid();updateActions();
-  toast(`${selName} 퇴근 완료 🚪 (${calcDur(rec.checkIn,rec.checkOut)})`,'ok');
+  toast(`${selName} 퇴근 🚪 ${rec.checkOut} (${calcDur(rec.checkIn,rec.checkOut)})`,'ok');
 }
 
 // ════════════════════════════════════════
