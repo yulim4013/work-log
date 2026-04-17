@@ -518,10 +518,14 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="sbox">
         <div class="sbox-t">☁️ Google Sheets 연동</div>
         <div class="fg"><label class="fl">Apps Script URL</label><input type="text" class="inp" id="sheetUrl" placeholder="https://script.google.com/macros/s/..."></div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
           <button class="btn btn-ac" style="flex:1;padding:10px;" onclick="saveSheetUrl()">저장 및 테스트</button>
           <button class="btn btn-gh" style="flex:1;padding:10px;" onclick="showGuide()">📖 설정 방법</button>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--sf2);padding:10px 12px;border-radius:10px;">
+          <input type="checkbox" id="autoSync" onchange="toggleAutoSync()" style="width:16px;height:16px;cursor:pointer;">
+          <span style="font-size:12px;line-height:1.4;"><b>자동 싱크</b> — 관리자 로그인 시 시트에서 최신 명단 자동 불러오기</span>
+        </label>
       </div>
 
       <div class="div"></div>
@@ -586,6 +590,7 @@ let S = JSON.parse(localStorage.getItem('evt_v3') || 'null') || {
   staff: [],
   records: [],
   sheetUrl: '',
+  autoSync: true,
   pay: {
     albaRate: 11000, albaBase: 8,
     staffWeekday: 15000, staffWeekend: 20000,
@@ -701,6 +706,10 @@ function adminLogin(){
 
 function refreshAdmin(){
   generateQRs(); updateAdminSub(); updateSyncStatus();
+  // 자동 싱크: 설정 ON + URL 있으면 시트에서 명단 자동 불러오기
+  if(S.autoSync!==false && S.sheetUrl){
+    loadFromSheets().catch(()=>{});
+  }
   // 역할 뱃지
   const badge=document.getElementById('adminRoleBadge');
   if(superUnlocked){
@@ -1459,6 +1468,13 @@ function loadSettings(){
   document.getElementById('staffWorkStart').value=S.pay.staffWorkStart||'09:00';
   document.getElementById('staffWorkEnd').value=S.pay.staffWorkEnd||'18:00';
   document.getElementById('sheetUrl').value=S.sheetUrl||'';
+  document.getElementById('autoSync').checked=S.autoSync!==false;
+}
+
+function toggleAutoSync(){
+  S.autoSync=document.getElementById('autoSync').checked;
+  save();
+  toast(S.autoSync?'자동 싱크 ON ☁️':'자동 싱크 OFF','ok');
 }
 
 function saveEvent(){
