@@ -451,8 +451,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
         <div style="font-size:11px;color:var(--mu);line-height:1.7;background:var(--sf2);border-radius:8px;padding:10px;margin-bottom:10px;">
           휴게시간 1시간 자동 차감<br>
           기본시간 초과분 x 1.5배<br>
-          소득세 3% + 지방���득세 (10원 단위 절삭)<br>
-          인건비 33,333원 이�� 세금 면제
+          소득세 3% + 지방소득세 (10원 단위 절삭)<br>
+          인건비 33,333원 이하 세금 면제
         </div>
         <button class="btn btn-ink btn-full" onclick="savePaySettings()">저장</button>
       </div>
@@ -676,7 +676,7 @@ function showQR(role){
 function updateAdminSub(){
   const ev=S.event;
   document.getElementById('adminSub').textContent=ev.name
-    ?`${ev.name}${ev.start?' · '+ev.start+(ev.end?' ~ '+ev.end:'')':''}`
+    ?`${ev.name}${ev.start?' · '+ev.start+(ev.end?' ~ '+ev.end:''):''}`
     :'행사를 설정하세요';
   document.getElementById('evName').textContent=ev.name||'-';
 }
