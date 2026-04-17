@@ -970,8 +970,8 @@ function renderMyRecords(){
         <div style="font-size:11px;color:var(--mu);margin-bottom:6px;font-weight:600;">${r.date} (${wd})</div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <span class="chip" style="background:var(--gn-d);color:var(--gn);"><span class="dot dot-i"></span>출 ${r.checkIn}</span>
-            ${r.checkOut?`<span class="chip" style="background:var(--rd-d);color:var(--rd);"><span class="dot dot-o"></span>퇴 ${r.checkOut}</span>`:''}
+            <span class="chip" style="background:var(--gn-d);color:var(--gn);font-weight:600;"><span class="dot dot-i"></span>출근 ${r.checkIn}</span>
+            ${r.checkOut?`<span class="chip" style="background:var(--rd-d);color:var(--rd);font-weight:600;"><span class="dot dot-o"></span>퇴근 ${r.checkOut}</span>`:''}
           </div>
           <div style="font-size:13px;font-weight:700;color:var(--ink);">${dur}</div>
         </div>
@@ -1659,6 +1659,10 @@ function normalizePerson(p,isStaff){
   if(typeof p==='string') return {name:p,payType:'hourly',rate:isStaff?(S.pay.staffWeekday||15000):(S.pay.albaRate||11000)};
   const obj={name:p.name,payType:p.payType||'hourly',rate:parseInt(p.rate)||0};
   if(p.weekendRate) obj.weekendRate=parseInt(p.weekendRate);
+  if(p.phone4){
+    const clean=String(p.phone4).replace(/[^0-9]/g,'').slice(-4);
+    if(clean.length===4) obj.phone4=clean;
+  }
   return obj;
 }
 
