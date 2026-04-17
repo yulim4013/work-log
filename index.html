@@ -64,14 +64,20 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 .nbtn.di::after{content:'●';position:absolute;top:3px;right:5px;font-size:7px;color:var(--gn);}
 .nbtn.do::after{content:'●';position:absolute;top:3px;right:5px;font-size:7px;color:var(--rd);}
 
-.scan-wrap{position:relative;border-radius:16px;overflow:hidden;background:#000;margin-top:10px;border:1px solid var(--bd);}
-#preview{width:100%;display:block;max-height:230px;object-fit:cover;}
+.scan-wrap{position:fixed;inset:0;background:#000;z-index:600;display:none;flex-direction:column;}
+.scan-wrap.on{display:flex;}
+#preview{width:100%;flex:1;display:block;object-fit:cover;min-height:0;}
 .sov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
-.sfr{width:130px;height:130px;border:2.5px solid var(--ac);border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.55);}
+.sfr{width:min(70vw,340px);height:min(70vw,340px);border:3px solid var(--ac);border-radius:24px;box-shadow:0 0 0 9999px rgba(0,0,0,.55);}
 .sfr.sf-s{border-color:var(--bl);}
-.sln{position:absolute;width:110px;height:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent);animation:sm 2s linear infinite;}
+.sln{position:absolute;width:min(60vw,300px);height:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent);animation:sm 2s linear infinite;}
 .sln.sl-s{background:linear-gradient(90deg,transparent,var(--bl),transparent);}
-@keyframes sm{0%{top:calc(50% - 65px)}100%{top:calc(50% + 65px)}}
+@keyframes sm{0%{top:calc(50% - min(35vw,170px))}100%{top:calc(50% + min(35vw,170px))}}
+.scan-top{position:absolute;top:0;left:0;right:0;padding:env(safe-area-inset-top,20px) 16px 14px;background:linear-gradient(180deg,rgba(0,0,0,0.7) 0%,transparent 100%);display:flex;justify-content:space-between;align-items:center;z-index:10;}
+.scan-top-t{color:#fff;font-weight:700;font-size:15px;}
+.scan-close{background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:999px;padding:8px 14px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.scan-close:hover{background:rgba(255,255,255,0.25);}
+.scan-bot{position:absolute;bottom:0;left:0;right:0;padding:14px 20px calc(env(safe-area-inset-bottom,20px) + 20px);background:linear-gradient(0deg,rgba(0,0,0,0.7) 0%,transparent 100%);z-index:10;}
 .sst{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--mu);text-align:center;min-height:40px;display:flex;align-items:center;justify-content:center;gap:6px;}
 .sst.ok{color:var(--gn);border-color:rgba(74,222,128,.3);background:var(--gn-d);}
 .sst.err{color:var(--rd);border-color:rgba(248,113,113,.3);background:var(--rd-d);}
@@ -248,15 +254,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="sn a" id="s1n">1</div>
       <div class="stitle" id="s1title">QR 스캔</div>
       <div class="sdesc" id="s1desc">운영요원/직원 QR이 따로 있어요. 관리자 화면에서 맞는 QR을 보여달라고 하세요.</div>
-      <div class="scan-wrap" id="scanWrap" style="display:none">
-        <video id="preview" autoplay playsinline muted></video>
-        <div class="sov"><div class="sfr" id="scanFrame"></div><div class="sln" id="scanLine"></div></div>
-      </div>
       <div class="sst" id="scanSt">📷 카메라 버튼을 눌러 스캔하세요</div>
-      <div class="br">
-        <button class="btn btn-ac" style="flex:1" id="btnCam" onclick="startCam()">📷 카메라</button>
-        <button class="btn btn-gh" style="flex:1" onclick="stopCam()">중지</button>
-      </div>
+      <button class="btn btn-ac btn-full" style="margin-top:10px;" id="btnCam" onclick="startCam()">📷 카메라로 QR 스캔</button>
     </div>
 
     <!-- STEP 2 이름 -->
@@ -563,6 +562,19 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
   </div>
 </div>
 
+<!-- QR 스캔 풀스크린 -->
+<div class="scan-wrap" id="scanWrap">
+  <div class="scan-top">
+    <div class="scan-top-t" id="scanTopTitle">QR 스캔</div>
+    <button class="scan-close" onclick="stopCam()">✕ 닫기</button>
+  </div>
+  <video id="preview" autoplay playsinline muted></video>
+  <div class="sov"><div class="sfr" id="scanFrame"></div><div class="sln" id="scanLine"></div></div>
+  <div class="scan-bot">
+    <div class="sst" id="scanStBot" style="background:rgba(255,255,255,0.15);color:#fff;border:none;">📷 QR을 프레임 안 중앙에</div>
+  </div>
+</div>
+
 <!-- PIN 인증 모달 -->
 <div id="pinModal" style="display:none;position:fixed;inset:0;background:rgba(10,10,31,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:700;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:24px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(67,56,202,0.2);">
@@ -793,19 +805,24 @@ function setRole(r){
 // ════════════════════════════════════════
 async function startCam(){
   try{
-    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    camStream=await navigator.mediaDevices.getUserMedia({video:{
+      facingMode:'environment',
+      width:{ideal:1280},
+      height:{ideal:720}
+    }});
     document.getElementById('preview').srcObject=camStream;
-    document.getElementById('scanWrap').style.display='block';
+    document.getElementById('scanWrap').classList.add('on');
+    document.getElementById('scanTopTitle').textContent=curRole==='alba'?'운영요원 QR 스캔':'직원 QR 스캔';
     document.getElementById('btnCam').disabled=true;
-    setScanSt('📷 QR 코드를 프레임 안에 맞춰주세요...','');
-    camTimer=setInterval(scanFrame,300);
+    setScanSt('📷 QR을 프레임 중앙에 맞추세요','');
+    camTimer=setInterval(scanFrame,200);
   } catch(e){ setScanSt('❌ 카메라 권한이 필요합니다','err'); }
 }
 
 function stopCam(){
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
   clearInterval(camTimer);
-  const w=document.getElementById('scanWrap'); if(w) w.style.display='none';
+  const w=document.getElementById('scanWrap'); if(w) w.classList.remove('on');
   const b=document.getElementById('btnCam'); if(b) b.disabled=false;
   if(!qrVerified) setScanSt('📷 카메라 버튼을 눌러 스캔하세요','');
 }
@@ -817,7 +834,7 @@ function scanFrame(){
   c.width=v.videoWidth; c.height=v.videoHeight;
   c.getContext('2d').drawImage(v,0,0);
   const img=c.getContext('2d').getImageData(0,0,c.width,c.height);
-  const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+  const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
   if(code){
     const expected=makeToken(curRole);
     if(code.data===expected){
@@ -827,10 +844,13 @@ function scanFrame(){
       document.getElementById('s1n').classList.add('done');
       document.getElementById('s2').classList.remove('locked');
       renderNameGrid();
-    } else if(code.data.startsWith('AL-')||code.data.startsWith('ST-')){
-      setScanSt(`❌ ${curRole==='alba'?'운영요원':'직원'} QR을 스캔하세요`,'err');
+    } else if(code.data.startsWith('AL-')){
+      setScanSt(`❌ 운영요원 QR이지만 토큰 불일치 (${code.data}). PC/폰 시간/날짜 확인`,'err');
+    } else if(code.data.startsWith('ST-')){
+      if(curRole==='alba') setScanSt('❌ 직원 QR 스캔됨. 역할을 "직원"으로 변경하세요','err');
+      else setScanSt(`❌ 직원 QR이지만 토큰 불일치 (${code.data}). 시간/날짜 확인`,'err');
     } else {
-      setScanSt('❌ 유효하지 않은 QR입니다','err');
+      setScanSt(`❌ 유효하지 않은 QR: ${code.data.slice(0,20)}`,'err');
     }
   }
 }
@@ -838,6 +858,11 @@ function scanFrame(){
 function setScanSt(msg,cls){
   const el=document.getElementById('scanSt');
   if(el){el.textContent=msg;el.className='sst'+(cls?' '+cls:'');}
+  const elBot=document.getElementById('scanStBot');
+  if(elBot){
+    elBot.textContent=msg;
+    elBot.style.background=cls==='err'?'rgba(220,38,38,0.8)':cls==='ok'?'rgba(5,150,105,0.8)':'rgba(255,255,255,0.15)';
+  }
 }
 
 // ════════════════════════════════════════
