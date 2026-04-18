@@ -1,8 +1,12 @@
-// work-log Google Sheets 연동 v4
+// work-log Google Sheets 연동 v5
 // 시트 구조:
 //   [운영요원] A:이름 B:급여타입(시급/일급) C:시급/일급 D:전화뒷4
 //   [직원]     A:이름 B:급여타입 C:평일시급(or일급) D:주말시급 E:전화뒷4
 //   [기록]     A:역할 B:이름 C:날짜 D:출근 E:퇴근 F:행사
+//   [설정]     A:키 B:값 (eventName, eventStart, eventEnd, albaRate, staffWeekday 등)
+//
+// v5 변경: [설정] 시트로 행사/급여 정보 공유. getSettings/syncSettings 액션 추가.
+//          getStaff 응답에 settings 포함. readRecords에서 Date → 오전/오후 HH:MM 변환.
 
 function doGet(e) {
   const action = e.parameter.action;
