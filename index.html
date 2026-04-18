@@ -517,7 +517,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
         <div style="font-size:11px;color:var(--mu);line-height:1.7;background:var(--sf2);border-radius:8px;padding:10px;margin-bottom:10px;">
           정규시간 외 시간만 수당 계산<br>
           야간(22:00~06:00) 구간 x 1.5배 추가<br>
-          소득세 3% + 지방소득세 (10원 단위 절삭)
+          <b>세금 공제 없음 (세전 금액 지급)</b>
         </div>
         <button class="btn btn-ink btn-full" onclick="savePaySettings()">저장</button>
       </div>
@@ -1105,15 +1105,16 @@ function doOut(){
   syncRecordToSheet('update', rec);
 }
 
-// 일별 급여 계산 (시트 스냅샷용, 세금은 근사치 3.3%)
+// 일별 급여 계산 (시트 스냅샷용, 운영요원만 세금 3.3% 근사, 직원은 세금 없음)
 function calcDayPay(rec, person){
   if(!rec.checkOut) return {hours:0,total:0,tax:0,net:0,payType:'hourly',rate:0};
   const payType=(person&&person.payType)||rec.payType||'hourly';
   const rate=rec.rate||(person&&person.rate)||0;
+  const isStaff=rec.role==='staff';
 
   if(payType==='daily'){
     const total=rate;
-    const tax=Math.floor(total*0.033/10)*10;
+    const tax=isStaff?0:Math.floor(total*0.033/10)*10;
     return {hours:0,total,tax,net:total-tax,payType,rate};
   }
 
@@ -1131,7 +1132,7 @@ function calcDayPay(rec, person){
     basicPay=hours*rate;
   }
   const total=Math.round(basicPay+overPay);
-  const tax=Math.floor(total*0.033/10)*10;
+  const tax=isStaff?0:Math.floor(total*0.033/10)*10;
   return {hours,total,tax,net:total-tax,payType,rate};
 }
 
@@ -1273,6 +1274,7 @@ function calcAlbaPay(recs, person){
 }
 
 function calcStaffPay(recs, person){
+  // 직원은 세금 없음 — 실지급액 = 총급여 (세전)
   const p=S.pay;
   const payType=(person&&person.payType)||'hourly';
   const wdRate=(person&&person.rate)||p.staffWeekday||15000;
@@ -1287,9 +1289,8 @@ function calcStaffPay(recs, person){
       basicPay+=isWeekend(r.date)?weRate:wdRate;
     });
     const total=Math.round(basicPay);
-    const tax=calcTax(total);
     return {basicPay:total,overPay:0,total,
-      incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax,
+      incomeTax:0,localTax:0,tax:0,net:total,
       payType};
   }
 
@@ -1314,9 +1315,8 @@ function calcStaffPay(recs, person){
     overPay+=normalOver/60*rate + nightOver/60*rate*1.5;
   });
   const total=Math.round(overPay);
-  const tax=calcTax(total);
   return {basicPay:Math.round(basicPay),overPay:Math.round(overPay),total,
-    incomeTax:tax.incomeTax,localTax:tax.localTax,tax:tax.totalTax,net:total-tax.totalTax,
+    incomeTax:0,localTax:0,tax:0,net:total,
     payType};
 }
 
@@ -1454,8 +1454,8 @@ function renderPay(){
       <div class="pb">
         <div class="pr"><span class="plbl">${payType==='daily'?'일급 합계':'기본 급여'}</span><span class="pamt">${fmt(pay.basicPay)}</span></div>
         ${pay.overPay>0?`<div class="pr"><span class="plbl">추가 수당 <span class="tag to">초과/야간</span></span><span class="pamt">${fmt(pay.overPay)}</span></div>`:''}
-        <div class="pr"><span class="plbl">소득세 (3%)</span><span class="pamt" style="color:var(--rd);">-${fmt(pay.incomeTax)}</span></div>
-        <div class="pr"><span class="plbl">지방소득세 (10%)</span><span class="pamt" style="color:var(--rd);">-${fmt(pay.localTax)}</span></div>
+        ${role==='alba'?`<div class="pr"><span class="plbl">소득세 (3%)</span><span class="pamt" style="color:var(--rd);">-${fmt(pay.incomeTax)}</span></div>
+        <div class="pr"><span class="plbl">지방소득세 (10%)</span><span class="pamt" style="color:var(--rd);">-${fmt(pay.localTax)}</span></div>`:'<div class="pr" style="font-size:10px;color:var(--mu);"><span>직원 세전 지급</span></div>'}
         <div class="pr ptot"><span class="plbl">총 지급액</span><span class="ptot-amt ${role==='staff'?'st':''}">${fmt(pay.net)}</span></div>
       </div>
     </div>`;
