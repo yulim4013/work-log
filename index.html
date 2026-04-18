@@ -998,7 +998,33 @@ function renderMyRecords(){
   `;
 }
 
-function nowTime(){ return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+function nowTime(){
+  const d=new Date();
+  const h=d.getHours();
+  const m=d.getMinutes();
+  const ampm=h>=12?'오후':'오전';
+  const h12=h%12||12;
+  return `${ampm} ${h12}:${String(m).padStart(2,'0')}`;
+}
+
+// 오염된 시간 문자열 정규화 ("Sat Dec 30 1899..." 등 Date 객체 stringify 결과 → 오전/오후 HH:MM)
+function normalizeTime(t){
+  if(!t) return '';
+  const s=String(t);
+  if(s.includes('GMT')||s.includes('1899')){
+    try{
+      const d=new Date(s);
+      if(!isNaN(d.getTime())){
+        const h=d.getHours();
+        const m=d.getMinutes();
+        const ampm=h>=12?'오후':'오전';
+        const h12=h%12||12;
+        return `${ampm} ${h12}:${String(m).padStart(2,'0')}`;
+      }
+    }catch(e){}
+  }
+  return s;
+}
 
 // PIN 인증 (전화번호 뒷자리 4자리)
 let pendingAction=null;
@@ -1080,10 +1106,13 @@ async function syncRecordToSheet(action, rec){
 // 시트에서 기록 전체 로드 (관리자 화면 진입 시 자동 호출)
 async function loadRecordsFromSheets(){
   if(!S.sheetUrl) return;
+  // 기존 로컬 오염된 시간 정규화
+  S.records.forEach(x=>{x.checkIn=normalizeTime(x.checkIn);x.checkOut=normalizeTime(x.checkOut);});
   try{
     const r = await fetch(S.sheetUrl+'?action=getRecords');
     const d = await r.json();
     if(d.records && Array.isArray(d.records)){
+      d.records.forEach(x=>{x.checkIn=normalizeTime(x.checkIn);x.checkOut=normalizeTime(x.checkOut);});
       // 정보 점수: checkIn/checkOut 있을수록 높음. 많은 정보 쪽 우선.
       const score = x => (x.checkIn?1:0)+(x.checkOut?1:0);
       const key = x => `${x.role}|${x.name}|${x.date}`;
@@ -1287,27 +1316,50 @@ function renderRecords(){
   const sel=document.getElementById('filterName'), cur=sel.value;
   sel.innerHTML='<option value="">전체 인원</option>';
   [...S.alba,...S.staff].forEach(p=>{const n=personName(p);sel.innerHTML+=`<option value="${n}"${n===cur?' selected':''}>${n}</option>`;});
-  let recs=[...S.records].sort((a,b)=>b.date.localeCompare(a.date));
+  let recs=[...S.records];
   if(ft) recs=recs.filter(r=>r.role===ft);
   if(fn) recs=recs.filter(r=>r.name===fn);
   if(fd) recs=recs.filter(r=>r.date===fd);
   const list=document.getElementById('recordsList');
   if(!recs.length){list.innerHTML='<div class="empty"><div class="ei">📭</div>기록이 없습니다</div>';return;}
-  list.innerHTML=recs.map(r=>{
-    const st=!r.checkIn?`<span class="badge b-abs">미출근</span>`
-      :!r.checkOut?`<span class="badge b-in">근무중</span>`:`<span class="badge b-out">퇴근</span>`;
-    const roleTag=r.role==='alba'?`<span class="badge b-a">운영</span>`:`<span class="badge b-s">직원</span>`;
-    return `<div class="ri">
-      <div class="rt">
-        <div>${roleTag}<span class="rn" style="margin-left:5px;">${r.name}</span> ${st}
-          <div class="rm">${r.date}${r.event?' · '+r.event:''}</div>
+  // 사람별 그룹화
+  const groups={};
+  recs.forEach(r=>{
+    const k=`${r.role}|${r.name}`;
+    if(!groups[k]) groups[k]={role:r.role,name:r.name,records:[]};
+    groups[k].records.push(r);
+  });
+  Object.values(groups).forEach(g=>g.records.sort((a,b)=>b.date.localeCompare(a.date)));
+  const sortedGroups=Object.values(groups).sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  list.innerHTML=sortedGroups.map(g=>{
+    const totalMins=g.records.reduce((s,r)=>s+durMins(r.checkIn,r.checkOut),0);
+    const totalH=Math.floor(totalMins/60);
+    const totalM=totalMins%60;
+    const completedDays=g.records.filter(r=>r.checkOut).length;
+    const roleTag=g.role==='alba'?'<span class="badge b-a">운영</span>':'<span class="badge b-s">직원</span>';
+    return `<div class="ri" style="padding:14px 16px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bd);">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          ${roleTag}<span class="rn">${g.name}</span>
         </div>
-        ${r.checkOut?`<div class="dc">⏱ ${calcDur(r.checkIn,r.checkOut)}</div>`:''}
+        <div style="font-size:11px;color:var(--mu);font-weight:600;">${completedDays}일 · ${totalH}시간 ${totalM}분</div>
       </div>
-      ${r.checkIn?`<div class="rtimes">
-        <div class="chip"><span class="dot dot-i"></span>${r.checkIn}</div>
-        ${r.checkOut?`<div class="chip"><span class="dot dot-o"></span>${r.checkOut}</div>`:''}
-      </div>`:''}
+      ${g.records.map((r,i)=>{
+        const dt=new Date(r.date);
+        const wd=['일','월','화','수','목','금','토'][dt.getDay()];
+        const dur=r.checkOut?calcDur(r.checkIn,r.checkOut):'<span style="color:var(--gn);font-weight:700;">근무중</span>';
+        const borderStyle=i<g.records.length-1?'border-bottom:1px solid var(--bd);':'';
+        return `<div style="padding:8px 0;${borderStyle}font-size:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="color:var(--mu);font-weight:600;min-width:110px;">${r.date} (${wd})</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;">
+              ${r.checkIn?`<span class="chip" style="background:var(--gn-d);color:var(--gn);font-weight:600;"><span class="dot dot-i"></span>출근 ${r.checkIn}</span>`:'<span class="badge b-abs">미출근</span>'}
+              ${r.checkOut?`<span class="chip" style="background:var(--rd-d);color:var(--rd);font-weight:600;"><span class="dot dot-o"></span>퇴근 ${r.checkOut}</span>`:''}
+            </div>
+            <div style="font-weight:700;font-size:12px;min-width:70px;text-align:right;">${dur}</div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>`;
   }).join('');
 }
@@ -1658,6 +1710,7 @@ function saveEvent(){
   S.event.start=document.getElementById('evStart').value;
   S.event.end=document.getElementById('evEnd').value;
   save(); updateAdminSub(); toast('행사 정보 저장됨 ✅','ok');
+  syncSettingsToSheet();
 }
 
 function savePaySettings(){
@@ -1668,6 +1721,7 @@ function savePaySettings(){
   S.pay.staffWorkStart=document.getElementById('staffWorkStart').value||'09:00';
   S.pay.staffWorkEnd=document.getElementById('staffWorkEnd').value||'18:00';
   save(); toast('급여 설정 저장됨 ✅','ok');
+  syncSettingsToSheet();
 }
 
 function changePw(role){
@@ -1712,9 +1766,42 @@ async function loadFromSheets(){
     const d=await r.json();
     if(d.alba) S.alba=d.alba.map(normalizePerson);
     if(d.staff) S.staff=d.staff.map(p=>normalizePerson(p,true));
-    save(); renderStaffLists(); renderNameGrid();
+    if(d.settings){applySettingsFromSheet(d.settings);}
+    save(); renderStaffLists(); renderNameGrid(); updateAdminSub();
+    if(document.getElementById('evNameInput')) loadSettings();
     toast('명단 불러오기 완료','ok');
   } catch{ toast('불러오기 실패','err'); }
+}
+
+function applySettingsFromSheet(s){
+  if(!s||typeof s!=='object') return;
+  if(s.eventName!==undefined) S.event.name=String(s.eventName||'');
+  if(s.eventStart!==undefined) S.event.start=String(s.eventStart||'');
+  if(s.eventEnd!==undefined) S.event.end=String(s.eventEnd||'');
+  if(s.albaRate) S.pay.albaRate=parseInt(s.albaRate)||S.pay.albaRate;
+  if(s.albaBase) S.pay.albaBase=parseInt(s.albaBase)||S.pay.albaBase;
+  if(s.staffWeekday) S.pay.staffWeekday=parseInt(s.staffWeekday)||S.pay.staffWeekday;
+  if(s.staffWeekend) S.pay.staffWeekend=parseInt(s.staffWeekend)||S.pay.staffWeekend;
+  if(s.staffWorkStart) S.pay.staffWorkStart=String(s.staffWorkStart);
+  if(s.staffWorkEnd) S.pay.staffWorkEnd=String(s.staffWorkEnd);
+}
+
+async function syncSettingsToSheet(){
+  if(!S.sheetUrl) return;
+  const settings={
+    eventName:S.event.name||'',
+    eventStart:S.event.start||'',
+    eventEnd:S.event.end||'',
+    albaRate:S.pay.albaRate||11000,
+    albaBase:S.pay.albaBase||8,
+    staffWeekday:S.pay.staffWeekday||15000,
+    staffWeekend:S.pay.staffWeekend||20000,
+    staffWorkStart:S.pay.staffWorkStart||'09:00',
+    staffWorkEnd:S.pay.staffWorkEnd||'18:00'
+  };
+  try{
+    await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({action:'syncSettings',settings})});
+  }catch(e){}
 }
 
 function normalizePerson(p,isStaff){

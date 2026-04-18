@@ -13,8 +13,13 @@ function doGet(e) {
   if (action === 'getStaff') {
     return ok({
       alba: readAlba(ss),
-      staff: readStaff(ss)
+      staff: readStaff(ss),
+      settings: readSettings(ss)
     });
+  }
+
+  if (action === 'getSettings') {
+    return ok({settings: readSettings(ss)});
   }
 
   if (action === 'getRecords') {
@@ -45,6 +50,11 @@ function doPost(e) {
   if (body.action === 'syncStaff') {
     writeAlba(ss, body.alba || []);
     writeStaff(ss, body.staff || []);
+    return ok({status: 'ok'});
+  }
+
+  if (body.action === 'syncSettings') {
+    writeSettings(ss, body.settings || {});
     return ok({status: 'ok'});
   }
 
@@ -93,6 +103,18 @@ function formatSheetDate(v) {
   return String(v);
 }
 
+function formatSheetTime(v) {
+  if (!v) return '';
+  if (v instanceof Date) {
+    const h = v.getHours();
+    const m = v.getMinutes();
+    const ampm = h >= 12 ? '오후' : '오전';
+    const h12 = h % 12 || 12;
+    return ampm + ' ' + h12 + ':' + String(m).padStart(2, '0');
+  }
+  return String(v);
+}
+
 function readAlba(ss) {
   const sheet = ss.getSheetByName('운영요원');
   if (!sheet) return [];
@@ -135,8 +157,8 @@ function readRecords(ss) {
       role: r[0] === '운영요원' ? 'alba' : 'staff',
       name: String(r[1]).trim(),
       date: formatSheetDate(r[2]),
-      checkIn: String(r[3] || ''),
-      checkOut: String(r[4] || ''),
+      checkIn: formatSheetTime(r[3]),
+      checkOut: formatSheetTime(r[4]),
       event: String(r[5] || '')
     };
   });
@@ -168,6 +190,30 @@ function writeStaff(ss, list) {
       p.weekendRate || '',
       p.phone4 || ''
     ]);
+  });
+}
+
+function readSettings(ss) {
+  const sheet = ss.getSheetByName('설정');
+  if (!sheet) return {};
+  const values = sheet.getDataRange().getValues();
+  const obj = {};
+  values.slice(1).forEach(function(r) {
+    if (r[0]) {
+      let v = r[1];
+      if (v instanceof Date) v = formatSheetDate(v);
+      obj[String(r[0]).trim()] = v;
+    }
+  });
+  return obj;
+}
+
+function writeSettings(ss, settings) {
+  const sheet = getOrCreate(ss, '설정');
+  sheet.clearContents();
+  sheet.appendRow(['키', '값']);
+  Object.keys(settings).forEach(function(k) {
+    sheet.appendRow([k, settings[k] == null ? '' : settings[k]]);
   });
 }
 
