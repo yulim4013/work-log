@@ -1,8 +1,10 @@
-// work-log Google Sheets 연동 v6
+// work-log Google Sheets 연동 v7
 // 시트 구조:
-//   [운영요원] A:이름 B:급여타입(시급/일급) C:시급/일급 D:전화뒷4
-//   [직원]     A:이름 B:급여타입 C:평일시급(or일급) D:주말시급 E:전화뒷4
+//   [운영요원] A:이름 B:급여타입 C:시급/일급 D:전화뒷4 E:은행명 F:계좌번호 G:예금주 H:주민번호
+//   [직원]     A:이름 B:급여타입 C:평일시급(or일급) D:주말시급 E:전화뒷4 F:은행명 G:계좌번호 H:예금주 I:주민번호
 //   [기록]     A:역할 B:이름 C:날짜 D:출근 E:퇴근 F:행사
+//              G:급여타입 H:단가 I:근무시간(h) J:당일급여 K:세금 L:실지급액
+//              M:기본급 N:초과수당 O:야간수당
 //              G:급여타입 H:단가 I:근무시간(h) J:당일급여 K:세금 L:실지급액
 //   [설정]     A:키 B:값 (eventName, eventStart, eventEnd, albaRate, staffWeekday 등)
 //
@@ -11,7 +13,7 @@
 // - ensureRecordHeader()로 기존 시트 헤더 자동 확장
 // - addRecord 시 event 비어있으면 [설정]의 eventName 자동 fallback
 
-const RECORD_HEADER = ['역할','이름','날짜','출근','퇴근','행사','급여타입','단가','근무시간(h)','당일급여','세금','실지급액'];
+const RECORD_HEADER = ['역할','이름','날짜','출근','퇴근','행사','급여타입','단가','근무시간(h)','당일급여','세금','실지급액','기본급','초과수당','야간수당'];
 
 function doGet(e) {
   const action = e.parameter.action;
@@ -20,11 +22,12 @@ function doGet(e) {
   if (action === 'ping') return ok({status: 'ok'});
 
   if (action === 'getStaff') {
-    return ok({
-      alba: readAlba(ss),
-      staff: readStaff(ss),
-      settings: readSettings(ss)
-    });
+    const alba = readAlba(ss);
+    const staff = readStaff(ss);
+    const personal = alba.concat(staff).map(function(p) { return p._pi; }).filter(Boolean);
+    alba.forEach(function(p) { delete p._pi; });
+    staff.forEach(function(p) { delete p._pi; });
+    return ok({alba: alba, staff: staff, settings: readSettings(ss), personal: personal});
   }
 
   if (action === 'getSettings') {
@@ -63,8 +66,10 @@ function doPost(e) {
   }
 
   if (body.action === 'syncStaff') {
-    writeAlba(ss, body.alba || []);
-    writeStaff(ss, body.staff || []);
+    const pMap = {};
+    (body.personal || []).forEach(function(p) { pMap[p.name] = p; });
+    writeAlba(ss, body.alba || [], pMap);
+    writeStaff(ss, body.staff || [], pMap);
     return ok({status: 'ok'});
   }
 
@@ -87,7 +92,7 @@ function doPost(e) {
       body.checkIn || '', '', eventName,
       body.payType === 'daily' ? '일급' : '시급',
       body.rate || '',
-      '', '', '', ''
+      '', '', '', '', '', '', ''
     ]);
     return ok({status: 'ok'});
   }
@@ -108,6 +113,9 @@ function doPost(e) {
         if (body.basePay !== undefined && body.basePay !== null) sheet.getRange(i + 1, 10).setValue(body.basePay);
         if (body.tax !== undefined && body.tax !== null) sheet.getRange(i + 1, 11).setValue(body.tax);
         if (body.net !== undefined && body.net !== null) sheet.getRange(i + 1, 12).setValue(body.net);
+        if (body.basicPay !== undefined && body.basicPay !== null) sheet.getRange(i + 1, 13).setValue(body.basicPay);
+        if (body.overPay !== undefined && body.overPay !== null) sheet.getRange(i + 1, 14).setValue(body.overPay);
+        if (body.nightPay !== undefined && body.nightPay !== null) sheet.getRange(i + 1, 15).setValue(body.nightPay);
         return ok({status: 'ok'});
       }
     }
@@ -156,14 +164,16 @@ function readAlba(ss) {
   const sheet = ss.getSheetByName('운영요원');
   if (!sheet) return [];
   const values = sheet.getDataRange().getValues();
-  return values.slice(1).filter(function(r){return r[0];}).map(function(r){
+  return values.slice(1).filter(function(r){return r[0] && String(r[0]).trim() !== '이름';}).map(function(r){
+    const name = String(r[0]).trim();
     const obj = {
-      name: String(r[0]).trim(),
+      name: name,
       payType: String(r[1]||'시급').indexOf('일')>=0 ? 'daily' : 'hourly',
       rate: parseInt(r[2]) || 0
     };
     const p4 = String(r[3]||'').replace(/[^0-9]/g,'').slice(-4);
     if (p4.length === 4) obj.phone4 = p4;
+    obj._pi = {name: name, bank: String(r[4]||''), account: String(r[5]||''), holder: String(r[6]||''), ssn: String(r[7]||'')};
     return obj;
   });
 }
@@ -172,15 +182,17 @@ function readStaff(ss) {
   const sheet = ss.getSheetByName('직원');
   if (!sheet) return [];
   const values = sheet.getDataRange().getValues();
-  return values.slice(1).filter(function(r){return r[0];}).map(function(r){
+  return values.slice(1).filter(function(r){return r[0] && String(r[0]).trim() !== '이름';}).map(function(r){
+    const name = String(r[0]).trim();
     const obj = {
-      name: String(r[0]).trim(),
+      name: name,
       payType: String(r[1]||'시급').indexOf('일')>=0 ? 'daily' : 'hourly',
       rate: parseInt(r[2]) || 0
     };
     if (r[3]) obj.weekendRate = parseInt(r[3]);
     const p4 = String(r[4]||'').replace(/[^0-9]/g,'').slice(-4);
     if (p4.length === 4) obj.phone4 = p4;
+    obj._pi = {name: name, bank: String(r[5]||''), account: String(r[6]||''), holder: String(r[7]||''), ssn: String(r[8]||'')};
     return obj;
   });
 }
@@ -208,31 +220,41 @@ function readRecords(ss) {
   });
 }
 
-function writeAlba(ss, list) {
+function writeAlba(ss, list, pMap) {
   const sheet = getOrCreate(ss, '운영요원');
   sheet.clearContents();
-  sheet.appendRow(['이름', '급여타입', '시급/일급', '전화뒷4']);
+  sheet.appendRow(['이름', '급여타입', '시급/일급', '전화뒷4', '은행명', '계좌번호', '예금주', '주민번호']);
   list.forEach(function(p) {
+    const pi = (pMap && pMap[p.name]) || {};
     sheet.appendRow([
       p.name,
       p.payType === 'daily' ? '일급' : '시급',
       p.rate || '',
-      p.phone4 || ''
+      p.phone4 || '',
+      pi.bank || '',
+      pi.account || '',
+      pi.holder || '',
+      pi.ssn || ''
     ]);
   });
 }
 
-function writeStaff(ss, list) {
+function writeStaff(ss, list, pMap) {
   const sheet = getOrCreate(ss, '직원');
   sheet.clearContents();
-  sheet.appendRow(['이름', '급여타입', '평일시급/일급', '주말시급', '전화뒷4']);
+  sheet.appendRow(['이름', '급여타입', '평일시급/일급', '주말시급', '전화뒷4', '은행명', '계좌번호', '예금주', '주민번호']);
   list.forEach(function(p) {
+    const pi = (pMap && pMap[p.name]) || {};
     sheet.appendRow([
       p.name,
       p.payType === 'daily' ? '일급' : '시급',
       p.rate || '',
       p.weekendRate || '',
-      p.phone4 || ''
+      p.phone4 || '',
+      pi.bank || '',
+      pi.account || '',
+      pi.holder || '',
+      pi.ssn || ''
     ]);
   });
 }

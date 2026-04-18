@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="jsQR.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 <style>
 :root{
   --bg:#dde1f0;
@@ -101,7 +102,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 .inp:focus{outline:none;border-color:var(--ac);background:#fff;box-shadow:0 0 0 3px var(--ac-d);}.inp::placeholder{color:var(--mu);}
 .fg{margin-bottom:12px;}
 .fl{font-size:11px;color:var(--mu);font-weight:700;margin-bottom:4px;display:block;letter-spacing:.04em;text-transform:uppercase;}
-.fr{display:flex;gap:8px;}
+.fr{display:flex;gap:8px;flex-wrap:wrap;}
 
 /* QR */
 .qr-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
@@ -158,7 +159,11 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 .b-s{background:var(--bl-d);color:var(--bl);}
 
 /* ADMIN TABS */
-.atabs{display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap;}
+.atabs{display:flex;gap:5px;margin-bottom:16px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+.li{width:13px;height:13px;vertical-align:-2px;stroke-width:2.5;display:inline-block;}
+.li-sm{width:11px;height:11px;vertical-align:-1px;stroke-width:2.5;display:inline-block;}
+.li-md{width:16px;height:16px;vertical-align:-3px;stroke-width:2;display:inline-block;}
+.upload-icon svg{width:28px;height:28px;color:var(--mu);}
 .atab{padding:8px 13px;border-radius:999px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;background:var(--sf);border:1px solid var(--bd);color:var(--mu);box-shadow:var(--shadow-sm);}
 .atab.active{background:#0a0a1f;color:#fff;border-color:#0a0a1f;}
 .ap{display:none;}.ap.active{display:block;}
@@ -237,8 +242,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 ══════════════════════════════ -->
 <div id="screen-worker" class="screen active">
   <nav class="nav">
-    <button class="nb active" onclick="goto('worker')">🕐 출퇴근부</button>
-    <button class="nb" onclick="goto('admin')">🔒 관리자</button>
+    <button class="nb active" onclick="goto('worker')"><i data-lucide="clock" class="li"></i> 출퇴근부</button>
+    <button class="nb" onclick="goto('admin')"><i data-lucide="lock" class="li"></i> 관리자</button>
   </nav>
   <div class="ct">
     <div class="pt">출퇴근 관리</div>
@@ -248,8 +253,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="ct-e" id="evName">-</div>
     </div>
     <div class="role-sw">
-      <button class="role-btn ra" id="roleAlba" onclick="setRole('alba')">🙋 운영요원</button>
-      <button class="role-btn" id="roleStaff" onclick="setRole('staff')">👔 직원</button>
+      <button class="role-btn ra" id="roleAlba" onclick="setRole('alba')"><i data-lucide="hand" class="li"></i> 운영요원</button>
+      <button class="role-btn" id="roleStaff" onclick="setRole('staff')"><i data-lucide="briefcase" class="li"></i> 직원</button>
     </div>
 
     <!-- STEP 1 QR -->
@@ -258,7 +263,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="stitle" id="s1title">QR 스캔</div>
       <div class="sdesc" id="s1desc">운영요원/직원 QR이 따로 있어요. 관리자 화면에서 맞는 QR을 보여달라고 하세요.</div>
       <div class="sst" id="scanSt">📷 카메라 버튼을 눌러 스캔하세요</div>
-      <button class="btn btn-ac btn-full" style="margin-top:10px;" id="btnCam" onclick="startCam()">📷 카메라로 QR 스캔</button>
+      <button class="btn btn-ac btn-full" style="margin-top:10px;" id="btnCam" onclick="startCam()"><i data-lucide="camera" class="li"></i> 카메라로 QR 스캔</button>
     </div>
 
     <!-- STEP 2 이름 -->
@@ -274,15 +279,15 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       <div class="sn a" id="s3n">3</div>
       <div class="stitle">출근 / 퇴근</div>
       <div class="ar">
-        <button class="btn btn-in" id="btnIn" onclick="tryAction('in')" disabled>✅ 출근</button>
-        <button class="btn btn-out" id="btnOut" onclick="tryAction('out')" disabled>🚪 퇴근</button>
+        <button class="btn btn-in" id="btnIn" onclick="tryAction('in')" disabled><i data-lucide="log-in" class="li"></i> 출근</button>
+        <button class="btn btn-out" id="btnOut" onclick="tryAction('out')" disabled><i data-lucide="log-out" class="li"></i> 퇴근</button>
       </div>
       <div id="selInfo" style="font-size:11px;color:var(--mu);text-align:center;margin-top:10px;min-height:16px;"></div>
     </div>
 
     <!-- 내 출퇴근 기록 -->
     <div class="sc" id="s4" style="display:none;">
-      <div class="stitle" style="margin-bottom:12px;">📋 내 출퇴근 기록</div>
+      <div class="stitle" style="margin-bottom:12px;"><i data-lucide="list" class="li-md"></i> 내 출퇴근 기록</div>
       <div id="myRecords"></div>
     </div>
   </div>
@@ -308,20 +313,20 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
     </div>
   </div>
   <nav class="nav">
-    <button class="nb" onclick="goto('worker')">← 나가기</button>
-    <button class="nb active" id="adminNavLabel">🔐 관리자</button>
+    <button class="nb" onclick="goto('worker')"><i data-lucide="chevron-left" class="li"></i> 나가기</button>
+    <button class="nb active" id="adminNavLabel"><i data-lucide="shield" class="li"></i> 관리자</button>
   </nav>
   <div class="ct">
     <div class="pt">관리자</div>
     <p class="ps" id="adminSub">행사를 설정하세요</p>
     <div id="adminRoleBadge" style="margin-bottom:12px;"></div>
     <div class="atabs" id="adminTabs">
-      <button class="atab active" onclick="showTab('qr')">📱 QR</button>
-      <button class="atab" onclick="showTab('today')">📋 오늘</button>
-      <button class="atab" onclick="showTab('records')">🗂 기록</button>
-      <button class="atab" id="tabPay" onclick="showTab('pay')">💰 급여</button>
-      <button class="atab" id="tabStaff" onclick="showTab('staff')">👥 직원</button>
-      <button class="atab" id="tabSettings" onclick="showTab('settings')">⚙️ 설정</button>
+      <button class="atab active" onclick="showTab('qr')"><i data-lucide="qr-code" class="li"></i> QR</button>
+      <button class="atab" onclick="showTab('today')"><i data-lucide="calendar" class="li"></i> 오늘</button>
+      <button class="atab" onclick="showTab('records')"><i data-lucide="archive" class="li"></i> 기록</button>
+      <button class="atab" id="tabPay" onclick="showTab('pay')"><i data-lucide="banknote" class="li"></i> 급여</button>
+      <button class="atab" id="tabStaff" onclick="showTab('staff')"><i data-lucide="users" class="li"></i> 직원</button>
+      <button class="atab" id="tabSettings" onclick="showTab('settings')"><i data-lucide="settings" class="li"></i> 설정</button>
     </div>
 
     <!-- QR 탭 -->
@@ -361,15 +366,17 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
           <option value="">전체</option><option value="alba">운영요원</option><option value="staff">직원</option>
         </select>
         <select class="fsel" id="filterName" onchange="renderRecords()"><option value="">전체 인원</option></select>
-        <input type="date" class="finp" id="filterDate" onchange="renderRecords()">
-        <button class="btn btn-gh" style="padding:7px 11px;font-size:11px;" onclick="clearFilters()">초기화</button>
+        <div style="display:flex;gap:6px;width:100%;">
+          <input type="date" class="finp" id="filterDate" onchange="renderRecords()" style="flex:1;min-width:0;">
+          <button class="btn btn-gh" style="padding:7px 11px;font-size:11px;white-space:nowrap;flex-shrink:0;" onclick="clearFilters()">초기화</button>
+        </div>
       </div>
       <div id="recordsList"></div>
       <div class="div"></div>
       <div class="sl">내보내기</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-gh" style="padding:10px 14px;" onclick="exportCSV()">📥 CSV</button>
-        <button class="btn btn-gh" style="padding:10px 14px;" onclick="syncSheets()">☁️ 시트 동기화</button>
+        <button class="btn btn-gh" style="padding:10px 14px;" onclick="exportCSV()"><i data-lucide="download" class="li"></i> CSV</button>
+        <button class="btn btn-gh" style="padding:10px 14px;" onclick="syncSheets()"><i data-lucide="refresh-cw" class="li"></i> 시트 동기화</button>
       </div>
     </div>
 
@@ -381,7 +388,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 
       <!-- 개인정보 업로드 & 지급표 추출 -->
       <div class="export-box">
-        <div class="export-box-t">📋 급여 지급표 추출</div>
+        <div class="export-box-t"><i data-lucide="file-text" class="li-md"></i> 급여 지급표 추출</div>
         <div class="export-desc">
           이름 / 전화번호 / 주민번호 / 은행명 / 계좌번호가 담긴 엑셀을 업로드하면
           급여와 합쳐진 지급표를 즉시 생성합니다.<br>
@@ -393,11 +400,11 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
           D열: 은행명 &nbsp;|&nbsp; E열: 계좌번호<br>
           <span style="color:var(--ac);">1행은 헤더, 2행부터 데이터</span>
         </div>
-        <button class="btn btn-gh btn-full" style="margin-bottom:8px;padding:10px;" onclick="downloadPersonalTemplate()">📄 개인정보 양식 다운로드</button>
+        <button class="btn btn-gh btn-full" style="margin-bottom:8px;padding:10px;" onclick="downloadPersonalTemplate()"><i data-lucide="file-down" class="li"></i> 개인정보 양식 다운로드</button>
 
         <div class="upload-area" id="uploadArea">
           <input type="file" accept=".xlsx,.xls,.csv" id="personalFile" onchange="handlePersonalFile(event)">
-          <div class="upload-icon">📂</div>
+          <div class="upload-icon"><i data-lucide="upload"></i></div>
           <div class="upload-text">개인정보 엑셀 업로드</div>
           <div class="upload-sub">클릭하거나 파일을 드래그하세요</div>
         </div>
@@ -406,8 +413,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
           <div class="sl">매칭 결과</div>
           <div class="match-preview" id="matchList"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-            <button class="btn btn-ac" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('alba')">🙋 운영요원 지급표 xlsx</button>
-            <button class="btn btn-bl" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('staff')">👔 직원 지급표 xlsx</button>
+            <button class="btn btn-ac" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('alba')"><i data-lucide="file-spreadsheet" class="li"></i> 운영요원 지급표</button>
+            <button class="btn btn-bl" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('staff')"><i data-lucide="file-spreadsheet" class="li"></i> 직원 지급표</button>
           </div>
         </div>
       </div>
@@ -417,14 +424,14 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
     <div id="ap-staff" class="ap">
       <!-- 마스터 엑셀 업로드 -->
       <div class="sbox">
-        <div class="sbox-t">📂 마스터 엑셀 업로드</div>
+        <div class="sbox-t"><i data-lucide="upload" class="li-md"></i> 마스터 엑셀 업로드</div>
         <div style="font-size:11px;color:var(--mu);line-height:1.6;margin-bottom:10px;">
           운영요원/직원 2개 시트가 있는 엑셀 파일을 올리면 명단 + 급여 + 개인정보가 한번에 세팅됩니다.
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-          <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="downloadMasterTemplate()">📄 양식 다운로드</button>
+          <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="downloadMasterTemplate()"><i data-lucide="file-down" class="li"></i> 양식 다운로드</button>
           <label class="btn btn-ink" style="flex:1;padding:10px;font-size:12px;cursor:pointer;text-align:center;">
-            📂 업로드
+            <i data-lucide="upload" class="li"></i> 업로드
             <input type="file" accept=".xlsx,.xls" onchange="handleMasterUpload(event)" style="display:none;">
           </label>
         </div>
@@ -469,8 +476,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 
       <div class="div"></div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="loadFromSheets()">☁️ 시트에서 불러오기</button>
-        <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="pushStaffToSheets()">☁️ 시트로 내보내기</button>
+        <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="loadFromSheets()"><i data-lucide="cloud-download" class="li"></i> 시트에서 불러오기</button>
+        <button class="btn btn-gh" style="flex:1;padding:10px;font-size:12px;" onclick="pushStaffToSheets()"><i data-lucide="cloud-upload" class="li"></i> 시트로 내보내기</button>
       </div>
     </div>
 
@@ -478,18 +485,16 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
     <div id="ap-settings" class="ap">
       <!-- 행사 정보 -->
       <div class="sbox">
-        <div class="sbox-t">🎪 행사 정보</div>
+        <div class="sbox-t"><i data-lucide="calendar-days" class="li-md"></i> 행사 정보</div>
         <div class="fg"><label class="fl">행사 이름</label><input type="text" class="inp" id="evNameInput" placeholder="예: 2025 봄 축제"></div>
-        <div class="fr">
-          <div style="flex:1"><label class="fl">시작일</label><input type="date" class="inp" id="evStart"></div>
-          <div style="flex:1"><label class="fl">종료일</label><input type="date" class="inp" id="evEnd"></div>
-        </div>
+        <div class="fg"><label class="fl">시작일</label><input type="date" class="inp" id="evStart"></div>
+        <div class="fg"><label class="fl">종료일</label><input type="date" class="inp" id="evEnd"></div>
         <button class="btn btn-ink btn-full" style="margin-top:12px;" onclick="saveEvent()">저장</button>
       </div>
 
       <!-- 운영요원 급여 설정 -->
       <div class="sbox">
-        <div class="sbox-t">🙋 운영요원 급여 설정</div>
+        <div class="sbox-t"><i data-lucide="hand" class="li-md"></i> 운영요원 급여 설정</div>
         <div class="rate-g">
           <div class="fg"><label class="fl">시급 (원)</label><input type="number" class="inp" id="albaRate" placeholder="11000"></div>
           <div class="fg"><label class="fl">기본 근무시간 (h)</label><input type="number" class="inp" id="albaBase" placeholder="8"></div>
@@ -505,15 +510,13 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 
       <!-- 직원 수당 설정 -->
       <div class="sbox">
-        <div class="sbox-t">👔 직원 수당 설정</div>
+        <div class="sbox-t"><i data-lucide="briefcase" class="li-md"></i> 직원 수당 설정</div>
         <div class="rate-g">
           <div class="fg"><label class="fl">평일 시급 (원)</label><input type="number" class="inp" id="staffWeekday" placeholder="15000"></div>
           <div class="fg"><label class="fl">주말 시급 (원)</label><input type="number" class="inp" id="staffWeekend" placeholder="20000"></div>
         </div>
-        <div class="fr">
-          <div style="flex:1"><label class="fl">정규 출근</label><input type="time" class="inp" id="staffWorkStart" value="09:00"></div>
-          <div style="flex:1"><label class="fl">정규 퇴근</label><input type="time" class="inp" id="staffWorkEnd" value="18:00"></div>
-        </div>
+        <div class="fg"><label class="fl">정규 출근</label><input type="time" class="inp" id="staffWorkStart" value="09:00"></div>
+        <div class="fg"><label class="fl">정규 퇴근</label><input type="time" class="inp" id="staffWorkEnd" value="18:00"></div>
         <div style="font-size:11px;color:var(--mu);line-height:1.7;background:var(--sf2);border-radius:8px;padding:10px;margin-bottom:10px;">
           정규시간 외 시간만 수당 계산<br>
           야간(22:00~06:00) 구간 x 1.5배 추가<br>
@@ -524,17 +527,17 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
 
       <!-- 구글 시트 -->
       <div class="sbox">
-        <div class="sbox-t">☁️ Google Sheets 연동</div>
+        <div class="sbox-t"><i data-lucide="cloud" class="li-md"></i> Google Sheets 연동</div>
         <div class="fg"><label class="fl">Apps Script URL</label><input type="text" class="inp" id="sheetUrl" placeholder="https://script.google.com/macros/s/..."></div>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
           <button class="btn btn-ac" style="flex:1;padding:10px;" onclick="saveSheetUrl()">저장 및 테스트</button>
-          <button class="btn btn-gh" style="flex:1;padding:10px;" onclick="showGuide()">📖 설정 방법</button>
+          <button class="btn btn-gh" style="flex:1;padding:10px;" onclick="showGuide()"><i data-lucide="book-open" class="li"></i> 설정 방법</button>
         </div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--sf2);padding:10px 12px;border-radius:10px;margin-bottom:10px;">
           <input type="checkbox" id="autoSync" onchange="toggleAutoSync()" style="width:16px;height:16px;cursor:pointer;">
           <span style="font-size:12px;line-height:1.4;"><b>자동 싱크</b> — 관리자 로그인 시 시트에서 최신 명단 자동 불러오기</span>
         </label>
-        <button class="btn btn-ink btn-full" onclick="copyShareLink()">🔗 공유 링크 복사</button>
+        <button class="btn btn-ink btn-full" onclick="copyShareLink()"><i data-lucide="link" class="li"></i> 공유 링크 복사</button>
         <div style="font-size:11px;color:var(--mu);line-height:1.6;margin-top:8px;">
           운영요원/직원에게 이 링크를 보내면 <b>기기별 시트 설정 없이 바로 출퇴근 가능</b>합니다.
         </div>
@@ -558,7 +561,7 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
       </div>
       <div class="div"></div>
       <div class="sl">위험 구역</div>
-      <button class="btn btn-dng btn-full" onclick="clearAll()">🗑️ 전체 기록 삭제</button>
+      <button class="btn btn-dng btn-full" onclick="clearAll()"><i data-lucide="trash-2" class="li"></i> 전체 기록 삭제</button>
     </div>
   </div>
 </div>
@@ -757,6 +760,7 @@ function adminLogin(){
 
 function refreshAdmin(){
   generateQRs(); updateAdminSub(); updateSyncStatus();
+  if(typeof lucide !== 'undefined') lucide.createIcons();
   // 자동 싱크: 설정 ON + URL 있으면 시트에서 명단 + 기록 자동 불러오기
   if(S.autoSync!==false && S.sheetUrl){
     loadFromSheets().catch(()=>{});
@@ -1097,6 +1101,9 @@ function doOut(){
   rec.payType=rec.payType||day.payType;
   if(!rec.rate) rec.rate=day.rate;
   rec.hours=day.hours;
+  rec.basicPay=day.basicPay;
+  rec.overPay=day.overPay;
+  rec.nightPay=day.nightPay;
   rec.basePay=day.total;
   rec.tax=day.tax;
   rec.net=day.net;
@@ -1107,7 +1114,7 @@ function doOut(){
 
 // 일별 급여 계산 (시트 스냅샷용, 운영요원만 세금 3.3% 근사, 직원은 세금 없음)
 function calcDayPay(rec, person){
-  if(!rec.checkOut) return {hours:0,total:0,tax:0,net:0,payType:'hourly',rate:0};
+  if(!rec.checkOut) return {hours:0,basicPay:0,overPay:0,nightPay:0,total:0,tax:0,net:0,payType:'hourly',rate:0};
   const payType=(person&&person.payType)||rec.payType||'hourly';
   const rate=rec.rate||(person&&person.rate)||0;
   const isStaff=rec.role==='staff';
@@ -1115,25 +1122,30 @@ function calcDayPay(rec, person){
   if(payType==='daily'){
     const total=rate;
     const tax=isStaff?0:Math.floor(total*0.033/10)*10;
-    return {hours:0,total,tax,net:total-tax,payType,rate};
+    return {hours:0,basicPay:rate,overPay:0,nightPay:0,total,tax,net:total-tax,payType,rate};
   }
 
-  let hours=0, basicPay=0, overPay=0;
+  let hours=0, basicPay=0, overPay=0, nightPay=0;
   if(rec.role==='alba'){
     const baseH=S.pay.albaBase||8;
     const mins=Math.max(0,durMins(rec.checkIn,rec.checkOut)-60);
     hours=Math.round(mins/60*10)/10;
-    if(hours<=baseH) basicPay=hours*rate;
-    else { basicPay=baseH*rate; overPay=(hours-baseH)*rate*1.5; }
+    basicPay=Math.round(hours*rate);
+    if(hours>baseH) overPay=Math.round((hours-baseH)*rate*0.5);
+    nightPay=Math.round(nightMins(rec.checkIn,rec.checkOut)/60*rate*0.5);
   } else {
-    // 직원: 근무시간 전체 기준 근사치 (정확 계산은 앱 급여 탭에서)
     const mins=durMins(rec.checkIn,rec.checkOut);
     hours=Math.round(mins/60*10)/10;
-    basicPay=hours*rate;
+    basicPay=Math.round(hours*rate);
+    const ws=t2m(S.pay.staffWorkStart||'09:00'), we=t2m(S.pay.staffWorkEnd||'18:00');
+    const regularMins=Math.max(0,Math.min(t2m(rec.checkOut),we)-Math.max(t2m(rec.checkIn),ws));
+    const overMins=Math.max(0,mins-regularMins);
+    if(overMins>0) overPay=Math.round(overMins/60*rate*0.5);
+    nightPay=Math.round(nightMins(rec.checkIn,rec.checkOut)/60*rate*0.5);
   }
-  const total=Math.round(basicPay+overPay);
+  const total=Math.round(basicPay+overPay+nightPay);
   const tax=isStaff?0:Math.floor(total*0.033/10)*10;
-  return {hours,total,tax,net:total-tax,payType,rate};
+  return {hours,basicPay,overPay,nightPay,total,tax,net:total-tax,payType,rate};
 }
 
 // 출퇴근 기록을 시트에 자동 push
@@ -1145,7 +1157,8 @@ async function syncRecordToSheet(action, rec){
        payType:rec.payType, rate:rec.rate}
     : {action:'updateRecord', role:rec.role, name:rec.name, date:rec.date,
        checkOut:rec.checkOut,
-       hours:rec.hours, basePay:rec.basePay, tax:rec.tax, net:rec.net};
+       hours:rec.hours, basePay:rec.basePay, tax:rec.tax, net:rec.net,
+       basicPay:rec.basicPay, overPay:rec.overPay, nightPay:rec.nightPay};
   try{
     const r=await fetch(S.sheetUrl, {method:'POST', body:JSON.stringify(body)});
     const d=await r.json();
@@ -1706,7 +1719,8 @@ async function syncPersonToSheet(role,action){
     await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({
       action:'syncStaff',
       alba:S.alba,
-      staff:S.staff
+      staff:S.staff,
+      personal:personalData
     })});
   } catch(e){}
 }
@@ -1717,7 +1731,8 @@ async function pushStaffToSheets(){
     const r=await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({
       action:'syncStaff',
       alba:S.alba,
-      staff:S.staff
+      staff:S.staff,
+      personal:personalData
     })});
     const d=await r.json();
     if(d.status==='ok') toast('시트 내보내기 완료 ☁️','ok');
@@ -1819,6 +1834,7 @@ async function loadFromSheets(){
     const d=await r.json();
     if(d.alba) S.alba=d.alba.map(normalizePerson);
     if(d.staff) S.staff=d.staff.map(p=>normalizePerson(p,true));
+    if(d.personal && d.personal.length) personalData=d.personal;
     if(d.settings){applySettingsFromSheet(d.settings);}
     save(); renderStaffLists(); renderNameGrid(); updateAdminSub();
     if(document.getElementById('evNameInput')) loadSettings();
@@ -1874,20 +1890,20 @@ function normalizePerson(p,isStaff){
 function downloadMasterTemplate(){
   const wb=XLSX.utils.book_new();
   const albaWs=XLSX.utils.aoa_to_sheet([
-    ['이름','급여타입','시급/일급','전화번호','주민번호','은행명','계좌번호'],
-    ['김민준','시급',11000,'010-1234-5678','900101-1234567','국민은행','123456-78-901234'],
-    ['박수퍼','시급',13000,'','','',''],
-    ['이일당','일급',100000,'','','','']
+    ['이름','급여타입','시급/일급','전화번호','주민번호','은행명','계좌번호','예금주'],
+    ['김민준','시급',11000,'010-1234-5678','900101-1234567','국민은행','123456-78-901234','김민준'],
+    ['박수퍼','시급',13000,'','','','',''],
+    ['이일당','일급',100000,'','','','','']
   ]);
-  albaWs['!cols']=[{wch:10},{wch:10},{wch:12},{wch:16},{wch:16},{wch:10},{wch:22}];
+  albaWs['!cols']=[{wch:10},{wch:10},{wch:12},{wch:16},{wch:16},{wch:10},{wch:22},{wch:10}];
   XLSX.utils.book_append_sheet(wb,albaWs,'운영요원');
 
   const staffWs=XLSX.utils.aoa_to_sheet([
-    ['이름','급여타입','평일시급/일급','주말시급','전화번호','주민번호','은행명','계좌번호'],
-    ['이팀장','시급',20000,25000,'','','',''],
-    ['박과장','일급',150000,'','','','','']
+    ['이름','급여타입','평일시급/일급','주말시급','전화번호','주민번호','은행명','계좌번호','예금주'],
+    ['이팀장','시급',20000,25000,'','','','',''],
+    ['박과장','일급',150000,'','','','','','']
   ]);
-  staffWs['!cols']=[{wch:10},{wch:10},{wch:14},{wch:12},{wch:16},{wch:16},{wch:10},{wch:22}];
+  staffWs['!cols']=[{wch:10},{wch:10},{wch:14},{wch:12},{wch:16},{wch:16},{wch:10},{wch:22},{wch:10}];
   XLSX.utils.book_append_sheet(wb,staffWs,'직원');
 
   XLSX.writeFile(wb,'work-log_마스터양식.xlsx');
@@ -1913,7 +1929,7 @@ function handleMasterUpload(e){
     if(albaSheet){
       const rows=XLSX.utils.sheet_to_json(albaSheet,{header:1});
       rows.slice(1).forEach(r=>{
-        if(!r[0]) return;
+        if(!r[0] || String(r[0]).trim()==='이름') return;
         const name=String(r[0]).trim();
         const payType=String(r[1]||'시급').includes('일')?'daily':'hourly';
         const rate=parseInt(r[2])||S.pay.albaRate||11000;
@@ -1922,7 +1938,7 @@ function handleMasterUpload(e){
         const p4=extractPhone4(phone);
         if(p4) entry.phone4=p4;
         newAlba.push(entry);
-        newPersonal.push({name,phone,ssn:String(r[4]||''),bank:String(r[5]||''),account:String(r[6]||'')});
+        newPersonal.push({name,phone,ssn:String(r[4]||''),bank:String(r[5]||''),account:String(r[6]||''),holder:String(r[7]||'')});
       });
     }
 
@@ -1931,7 +1947,7 @@ function handleMasterUpload(e){
     if(staffSheet){
       const rows=XLSX.utils.sheet_to_json(staffSheet,{header:1});
       rows.slice(1).forEach(r=>{
-        if(!r[0]) return;
+        if(!r[0] || String(r[0]).trim()==='이름') return;
         const name=String(r[0]).trim();
         const payType=String(r[1]||'시급').includes('일')?'daily':'hourly';
         const rate=parseInt(r[2])||S.pay.staffWeekday||15000;
@@ -1941,7 +1957,7 @@ function handleMasterUpload(e){
         const p4=extractPhone4(phone);
         if(p4) obj.phone4=p4;
         newStaff.push(obj);
-        newPersonal.push({name,phone,ssn:String(r[5]||''),bank:String(r[6]||''),account:String(r[7]||'')});
+        newPersonal.push({name,phone,ssn:String(r[5]||''),bank:String(r[6]||''),account:String(r[7]||''),holder:String(r[8]||'')});
       });
     }
 
@@ -2023,6 +2039,7 @@ function toast(msg,cls='ok'){
 // ════════════════════════════════════════
 setRole('alba');
 updateAdminSub();
+if(typeof lucide !== 'undefined') lucide.createIcons();
 
 // 공유 링크로 접속한 경우: 시트 자동 로드
 if(S.sheetUrl && S.autoSync!==false){
