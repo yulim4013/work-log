@@ -9,7 +9,7 @@
 <title>출퇴근 관리</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="jsQR.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -1787,7 +1787,7 @@ function applySettingsFromSheet(s){
 }
 
 async function syncSettingsToSheet(){
-  if(!S.sheetUrl) return;
+  if(!S.sheetUrl){toast('⚠ 시트 URL 없음 (설정 탭에서 저장)','warn');return;}
   const settings={
     eventName:S.event.name||'',
     eventStart:S.event.start||'',
@@ -1800,8 +1800,11 @@ async function syncSettingsToSheet(){
     staffWorkEnd:S.pay.staffWorkEnd||'18:00'
   };
   try{
-    await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({action:'syncSettings',settings})});
-  }catch(e){}
+    const r=await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({action:'syncSettings',settings})});
+    const d=await r.json();
+    if(d.status==='ok') toast('시트 [설정]에도 저장됨 ☁️','ok');
+    else toast('⚠ 시트 응답: '+(d.status||'unknown')+' (Apps Script v5 배포 필요)','warn');
+  }catch(e){toast('⚠ 시트 저장 실패: '+(e.message||'network'),'err');}
 }
 
 function normalizePerson(p,isStaff){
