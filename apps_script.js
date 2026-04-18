@@ -1,12 +1,17 @@
-// work-log Google Sheets 연동 v5
+// work-log Google Sheets 연동 v6
 // 시트 구조:
 //   [운영요원] A:이름 B:급여타입(시급/일급) C:시급/일급 D:전화뒷4
 //   [직원]     A:이름 B:급여타입 C:평일시급(or일급) D:주말시급 E:전화뒷4
 //   [기록]     A:역할 B:이름 C:날짜 D:출근 E:퇴근 F:행사
+//              G:급여타입 H:단가 I:근무시간(h) J:당일급여 K:세금 L:실지급액
 //   [설정]     A:키 B:값 (eventName, eventStart, eventEnd, albaRate, staffWeekday 등)
 //
-// v5 변경: [설정] 시트로 행사/급여 정보 공유. getSettings/syncSettings 액션 추가.
-//          getStaff 응답에 settings 포함. readRecords에서 Date → 오전/오후 HH:MM 변환.
+// v6 변경:
+// - [기록] 시트에 급여 스냅샷 6개 컬럼 추가 (G-L)
+// - ensureRecordHeader()로 기존 시트 헤더 자동 확장
+// - addRecord 시 event 비어있으면 [설정]의 eventName 자동 fallback
+
+const RECORD_HEADER = ['역할','이름','날짜','출근','퇴근','행사','급여타입','단가','근무시간(h)','당일급여','세금','실지급액'];
 
 function doGet(e) {
   const action = e.parameter.action;
@@ -40,12 +45,18 @@ function doPost(e) {
   if (body.action === 'syncRecords') {
     const sheet = getOrCreate(ss, '기록');
     sheet.clearContents();
-    sheet.appendRow(['역할', '이름', '날짜', '출근', '퇴근', '행사']);
+    sheet.appendRow(RECORD_HEADER);
     body.records.forEach(function(r) {
       sheet.appendRow([
         r.role === 'alba' ? '운영요원' : '직원',
         r.name, r.date,
-        r.checkIn || '', r.checkOut || '', r.event || ''
+        r.checkIn || '', r.checkOut || '', r.event || '',
+        r.payType === 'daily' ? '일급' : (r.payType ? '시급' : ''),
+        r.rate || '',
+        r.hours || '',
+        r.basePay || '',
+        r.tax || '',
+        r.net || ''
       ]);
     });
     return ok({status: 'ok'});
@@ -64,17 +75,26 @@ function doPost(e) {
 
   if (body.action === 'addRecord') {
     const sheet = getOrCreate(ss, '기록');
-    if (sheet.getLastRow() === 0) sheet.appendRow(['역할','이름','날짜','출근','퇴근','행사']);
+    ensureRecordHeader(sheet);
+    let eventName = body.event || '';
+    if (!eventName) {
+      const settings = readSettings(ss);
+      if (settings.eventName) eventName = String(settings.eventName);
+    }
     sheet.appendRow([
       body.role === 'alba' ? '운영요원' : '직원',
       body.name, body.date,
-      body.checkIn || '', '', body.event || ''
+      body.checkIn || '', '', eventName,
+      body.payType === 'daily' ? '일급' : '시급',
+      body.rate || '',
+      '', '', '', ''
     ]);
     return ok({status: 'ok'});
   }
 
   if (body.action === 'updateRecord') {
     const sheet = getOrCreate(ss, '기록');
+    ensureRecordHeader(sheet);
     const values = sheet.getDataRange().getValues();
     const roleStr = body.role === 'alba' ? '운영요원' : '직원';
     for (let i = 1; i < values.length; i++) {
@@ -84,6 +104,10 @@ function doPost(e) {
       if (sameRole && sameName && sameDate) {
         if (body.checkOut) sheet.getRange(i + 1, 5).setValue(body.checkOut);
         if (body.checkIn) sheet.getRange(i + 1, 4).setValue(body.checkIn);
+        if (body.hours !== undefined && body.hours !== null) sheet.getRange(i + 1, 9).setValue(body.hours);
+        if (body.basePay !== undefined && body.basePay !== null) sheet.getRange(i + 1, 10).setValue(body.basePay);
+        if (body.tax !== undefined && body.tax !== null) sheet.getRange(i + 1, 11).setValue(body.tax);
+        if (body.net !== undefined && body.net !== null) sheet.getRange(i + 1, 12).setValue(body.net);
         return ok({status: 'ok'});
       }
     }
@@ -91,6 +115,15 @@ function doPost(e) {
   }
 
   return ok({status: 'ok'});
+}
+
+function ensureRecordHeader(sheet) {
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(RECORD_HEADER);
+    return;
+  }
+  // 기존 헤더를 v6 스펙으로 확장/덮어쓰기
+  sheet.getRange(1, 1, 1, RECORD_HEADER.length).setValues([RECORD_HEADER]);
 }
 
 function getOrCreate(ss, name) {
@@ -157,7 +190,7 @@ function readRecords(ss) {
   if (!sheet) return [];
   const values = sheet.getDataRange().getValues();
   return values.slice(1).filter(function(r){return r[1];}).map(function(r){
-    return {
+    const obj = {
       role: r[0] === '운영요원' ? 'alba' : 'staff',
       name: String(r[1]).trim(),
       date: formatSheetDate(r[2]),
@@ -165,6 +198,13 @@ function readRecords(ss) {
       checkOut: formatSheetTime(r[4]),
       event: String(r[5] || '')
     };
+    if (r[6]) obj.payType = String(r[6]).indexOf('일') >= 0 ? 'daily' : 'hourly';
+    if (r[7]) obj.rate = parseInt(r[7]) || 0;
+    if (r[8] !== '' && r[8] != null) obj.hours = parseFloat(r[8]) || 0;
+    if (r[9] !== '' && r[9] != null) obj.basePay = parseInt(r[9]) || 0;
+    if (r[10] !== '' && r[10] != null) obj.tax = parseInt(r[10]) || 0;
+    if (r[11] !== '' && r[11] != null) obj.net = parseInt(r[11]) || 0;
+    return obj;
   });
 }
 
