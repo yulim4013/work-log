@@ -5,7 +5,6 @@
 //   [기록]     A:역할 B:이름 C:날짜 D:출근 E:퇴근 F:행사
 //              G:급여타입 H:단가 I:근무시간(h) J:당일급여 K:세금 L:실지급액
 //              M:기본급 N:초과수당 O:야간수당
-//              G:급여타입 H:단가 I:근무시간(h) J:당일급여 K:세금 L:실지급액
 //   [설정]     A:키 B:값 (eventName, eventStart, eventEnd, albaRate, staffWeekday 등)
 //
 // v6 변경:
@@ -237,6 +236,10 @@ function writeAlba(ss, list, pMap) {
       pi.ssn || ''
     ]);
   });
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 4, sheet.getLastRow() - 1, 1).setNumberFormat('@');
+    sheet.getRange(2, 8, sheet.getLastRow() - 1, 1).setNumberFormat('@');
+  }
 }
 
 function writeStaff(ss, list, pMap) {
@@ -257,6 +260,10 @@ function writeStaff(ss, list, pMap) {
       pi.ssn || ''
     ]);
   });
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 5, sheet.getLastRow() - 1, 1).setNumberFormat('@');
+    sheet.getRange(2, 9, sheet.getLastRow() - 1, 1).setNumberFormat('@');
+  }
 }
 
 function readSettings(ss) {
