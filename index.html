@@ -417,8 +417,12 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
           <div class="sl">매칭 결과</div>
           <div class="match-preview" id="matchList"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-            <button class="btn btn-ac" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('alba')"><i data-lucide="file-spreadsheet" class="li"></i> 운영요원 지급표</button>
-            <button class="btn btn-bl" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('staff')"><i data-lucide="file-spreadsheet" class="li"></i> 직원 지급표</button>
+            <button class="btn btn-ac" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('alba')"><i data-lucide="file-spreadsheet" class="li"></i> 운영요원 xlsx</button>
+            <button class="btn btn-bl" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('staff')"><i data-lucide="file-spreadsheet" class="li"></i> 직원 xlsx</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <button class="btn btn-gh" style="flex:1;padding:11px;" onclick="exportPayrollToSheet('alba')"><i data-lucide="table" class="li"></i> 운영요원 → 시트</button>
+            <button class="btn btn-gh" style="flex:1;padding:11px;" onclick="exportPayrollToSheet('staff')"><i data-lucide="table" class="li"></i> 직원 → 시트</button>
           </div>
         </div>
       </div>
@@ -1706,6 +1710,68 @@ function exportPayrollXlsx(role){
   personalData=[];
   document.getElementById('matchPreview').style.display='none';
   document.getElementById('personalFile').value='';
+}
+
+async function exportPayrollToSheet(role){
+  if(!S.sheetUrl){toast('시트 URL이 설정되지 않았습니다','err');return;}
+  const people=role==='alba'?S.alba:S.staff;
+  if(!people.length){toast('등록된 인원이 없습니다','err');return;}
+
+  const eventName=S.event.name||'행사';
+  const today=todayKey();
+  const allDates=[...new Set(S.records.filter(r=>r.role===role).map(r=>r.date))].sort();
+
+  const header=[
+    '이름','전화번호','주민번호','은행명','계좌번호','급여타입','시급/일급','주말시급',
+    ...allDates.flatMap(d=>[`${d} 출근`,`${d} 퇴근`]),
+    '총 근무시간(h)','기본급여','추가수당','총급여','소득세(3%)','지방소득세','공제계','차인지급액'
+  ];
+
+  let sumBasic=0,sumOver=0,sumTotal=0,sumIncomeTax=0,sumLocalTax=0,sumTax=0,sumNet=0,sumMins=0;
+  const rows=[];
+
+  people.forEach(person=>{
+    const name=personName(person);
+    const payType=person.payType||'hourly';
+    const rate=person.rate||0;
+    const weRate=person.weekendRate||'';
+    const recs=S.records.filter(r=>r.name===name&&r.role===role);
+    const pInfo=personalData.find(pd=>pd.name===name)||{phone:'',ssn:'',bank:'',account:''};
+    const pay=role==='alba'?calcAlbaPay(recs.filter(r=>r.checkOut),person):calcStaffPay(recs.filter(r=>r.checkOut),person);
+    const totalMins=recs.filter(r=>r.checkOut).reduce((s,r)=>s+durMins(r.checkIn,r.checkOut),0);
+    const totalH=Math.round(totalMins/60*10)/10;
+    rows.push([
+      name,pInfo.phone,pInfo.ssn,pInfo.bank,pInfo.account,
+      payType==='daily'?'일급':'시급',rate,weRate,
+      ...allDates.flatMap(d=>{const rec=recs.find(r=>r.date===d);return[rec?.checkIn||'',rec?.checkOut||''];}),
+      totalH,pay.basicPay,pay.overPay,pay.total,pay.incomeTax,pay.localTax,pay.tax,pay.net
+    ]);
+    sumBasic+=pay.basicPay;sumOver+=pay.overPay;sumTotal+=pay.total;
+    sumIncomeTax+=pay.incomeTax;sumLocalTax+=pay.localTax;sumTax+=pay.tax;sumNet+=pay.net;sumMins+=totalMins;
+  });
+
+  const sumRow=[
+    '【합계】','','','','','','','',
+    ...allDates.flatMap(()=>['','']),
+    Math.round(sumMins/60*10)/10,sumBasic,sumOver,sumTotal,sumIncomeTax,sumLocalTax,sumTax,sumNet
+  ];
+
+  toast('시트 생성 중...','');
+  try{
+    const res=await fetch(S.sheetUrl,{method:'POST',body:JSON.stringify({
+      action:'createPayrollSheet',
+      role,eventName,today,header,rows,sumRow
+    })});
+    const d=await res.json();
+    if(d.status==='ok'){
+      toast(`✅ 지급표 시트 생성 완료!`,'ok');
+      if(d.sheetUrl) window.open(d.sheetUrl,'_blank');
+    } else {
+      toast('시트 생성 실패: '+(d.status||'unknown'),'err');
+    }
+  } catch(e){
+    toast('시트 생성 에러: '+(e.message||'network'),'err');
+  }
 }
 
 // ════════════════════════════════════════

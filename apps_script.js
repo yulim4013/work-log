@@ -121,7 +121,77 @@ function doPost(e) {
     return ok({status: 'not_found'});
   }
 
+  if (body.action === 'createPayrollSheet') {
+    return ok(createPayrollSheet(ss, body));
+  }
+
   return ok({status: 'ok'});
+}
+
+function createPayrollSheet(ss, body) {
+  var role = body.role;
+  var sheetName = role === 'alba' ? '지급표_운영요원' : '지급표_직원';
+  var sheet = ss.getSheetByName(sheetName);
+  if (sheet) {
+    sheet.clearContents();
+    sheet.clearFormats();
+  } else {
+    sheet = ss.insertSheet(sheetName);
+  }
+
+  var eventName = body.eventName || '행사';
+  var today = body.today || '';
+  var header = body.header || [];
+  var rows = body.rows || [];
+  var sumRow = body.sumRow || [];
+
+  // 제목행
+  sheet.appendRow([eventName + ' ' + (role === 'alba' ? '운영요원' : '직원') + ' 급여 지급표']);
+  sheet.appendRow(['추출일: ' + today]);
+  sheet.appendRow([]);
+
+  // 헤더
+  sheet.appendRow(header);
+  var headerRow = 4;
+
+  // 합계행
+  sheet.appendRow(sumRow);
+
+  // 데이터행
+  rows.forEach(function(r) { sheet.appendRow(r); });
+
+  var totalRows = 3 + 1 + 1 + rows.length;
+
+  // 서식
+  var titleRange = sheet.getRange(1, 1, 1, header.length);
+  titleRange.merge();
+  titleRange.setFontWeight('bold').setFontSize(13);
+
+  var headerRange = sheet.getRange(headerRow, 1, 1, header.length);
+  headerRange.setFontWeight('bold')
+    .setBackground('#e8eaf6')
+    .setHorizontalAlignment('center');
+
+  var sumRange = sheet.getRange(5, 1, 1, header.length);
+  sumRange.setFontWeight('bold').setBackground('#fce4ec');
+
+  // 숫자 컬럼 포맷 (기본급여 이후)
+  var numStart = 9 + (body.header.length - 20); // allDates 동적 오프셋
+  if (rows.length > 0) {
+    var lastRow = 5 + rows.length;
+    var numCols = ['총 근무시간(h)','기본급여','추가수당','총급여','소득세(3%)','지방소득세','공제계','차인지급액'];
+    numCols.forEach(function(col) {
+      var idx = header.indexOf(col);
+      if (idx >= 0) {
+        sheet.getRange(5, idx + 1, lastRow - 4, 1).setNumberFormat('#,##0');
+      }
+    });
+  }
+
+  // 열 너비 자동 조절
+  sheet.autoResizeColumns(1, header.length);
+
+  return { status: 'ok', sheetUrl: ss.getUrl() };
 }
 
 function ensureRecordHeader(sheet) {
