@@ -406,6 +406,8 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
         </div>
         <button class="btn btn-gh btn-full" style="margin-bottom:8px;padding:10px;" onclick="downloadPersonalTemplate()"><i data-lucide="file-down" class="li"></i> 개인정보 양식 다운로드</button>
 
+        <div id="personalStatus" style="margin-bottom:10px;padding:10px 14px;border-radius:12px;font-size:12px;display:none;"></div>
+
         <div class="upload-area" id="uploadArea">
           <input type="file" accept=".xlsx,.xls,.csv" id="personalFile" onchange="handlePersonalFile(event)">
           <div class="upload-icon"><i data-lucide="upload"></i></div>
@@ -416,11 +418,15 @@ body{background:linear-gradient(135deg,#dde1f0 0%,#e8ebf5 50%,#d6dcef 100%);back
         <div id="matchPreview" style="display:none">
           <div class="sl">매칭 결과</div>
           <div class="match-preview" id="matchList"></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="sl">지급표 추출</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
             <button class="btn btn-ac" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('alba')"><i data-lucide="file-spreadsheet" class="li"></i> 운영요원 xlsx</button>
             <button class="btn btn-bl" style="flex:1;padding:11px;" onclick="exportPayrollXlsx('staff')"><i data-lucide="file-spreadsheet" class="li"></i> 직원 xlsx</button>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-gh" style="flex:1;padding:11px;" onclick="exportPayrollToSheet('alba')"><i data-lucide="table" class="li"></i> 운영요원 → 시트</button>
             <button class="btn btn-gh" style="flex:1;padding:11px;" onclick="exportPayrollToSheet('staff')"><i data-lucide="table" class="li"></i> 직원 → 시트</button>
           </div>
@@ -1202,6 +1208,25 @@ async function syncRecordToSheet(action, rec){
 //  RECORD EDIT
 // ════════════════════════════════════════
 let editTarget=null;
+
+function updatePersonalStatus(){
+  const el=document.getElementById('personalStatus');
+  if(!el) return;
+  const n=personalData.filter(p=>p.ssn||p.bank||p.account).length;
+  if(n>0){
+    el.style.display='block';
+    el.style.background='var(--gn-d)';
+    el.style.border='1px solid rgba(5,150,105,0.2)';
+    el.style.color='var(--gn)';
+    el.innerHTML=`✅ 개인정보 ${n}명 로드됨 (시트에서 자동 복원)`;
+  } else {
+    el.style.display='block';
+    el.style.background='var(--sf2)';
+    el.style.border='1px solid var(--bd)';
+    el.style.color='var(--mu)';
+    el.innerHTML=`개인정보 없음 — 엑셀 업로드 후 자동 저장됩니다`;
+  }
+}
 function escRec(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")};
 
 function timeToInput(t){
@@ -1610,6 +1635,7 @@ function handlePersonalFile(e){
     }));
     showMatchPreview();
     document.getElementById('matchPreview').style.display='block';
+    updatePersonalStatus();
     toast(`${personalData.length}명 데이터 로드됨`,'ok');
   };
   reader.readAsArrayBuffer(file);
@@ -1707,7 +1733,6 @@ function exportPayrollXlsx(role){
   XLSX.utils.book_append_sheet(wb,ws,role==='alba'?'운영요원 지급표':'직원 지급표');
   XLSX.writeFile(wb,`${eventName}_${role==='alba'?'운영요원':'직원'}_지급표_${today}.xlsx`);
   toast(`${role==='alba'?'운영요원':'직원'} 지급표 저장됨 📥`,'ok');
-  personalData=[];
   document.getElementById('matchPreview').style.display='none';
   document.getElementById('personalFile').value='';
 }
@@ -2011,7 +2036,7 @@ async function loadFromSheets(){
     const d=await r.json();
     if(d.alba) S.alba=d.alba.map(normalizePerson);
     if(d.staff) S.staff=d.staff.map(p=>normalizePerson(p,true));
-    if(d.personal && d.personal.length) personalData=d.personal;
+    if(d.personal && d.personal.length){personalData=d.personal;updatePersonalStatus();}
     if(d.settings){applySettingsFromSheet(d.settings);}
     save(); renderStaffLists(); renderNameGrid(); updateAdminSub();
     if(document.getElementById('evNameInput')) loadSettings();
@@ -2146,6 +2171,7 @@ function handleMasterUpload(e){
     S.alba=newAlba;
     S.staff=newStaff;
     personalData=newPersonal.filter(p=>p.phone||p.ssn||p.bank||p.account);
+    updatePersonalStatus();
     save();
     renderStaffLists();
     renderNameGrid();
