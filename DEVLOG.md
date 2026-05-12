@@ -9,6 +9,18 @@ last_updated: 2026-04-22
 
 ---
 
+## 2026-04-22 -- 지급표 Google Sheets 직접 생성
+
+### 기능 추가
+- 지급표 버튼 xlsx / 시트 2종 분리 ("운영요원 xlsx" / "운영요원 → 시트")
+- `exportPayrollToSheet(role)`: 급여 데이터 JSON → Apps Script POST
+- `createPayrollSheet()` (GAS): `지급표_운영요원` / `지급표_직원` 탭 생성+서식 적용
+  - 제목행 병합 + 헤더 볼드/배경색 + 합계행 강조 + 숫자 포맷 + 열 자동 너비
+- 생성 완료 시 구글 시트 자동 오픈 (window.open)
+- **주의**: Apps Script 재배포 필요 (새 버전 배포 후 URL 업데이트)
+
+---
+
 ## 2026-04-22 -- 출퇴근 기록 수정 기능
 
 ### 기능 추가
