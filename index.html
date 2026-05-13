@@ -1698,25 +1698,27 @@ function calcStaffPay(recs, person){
   // 시급 (정규시간 외 수당만 계산)
   const workStart=p.staffWorkStart||'09:00';
   const workEnd=p.staffWorkEnd||'18:00';
-  const [sh,sm]=(workStart||'09:00').split(':').map(Number);
-  const [eh,em]=(workEnd||'18:00').split(':').map(Number);
-  const regularStart=sh*60+(sm||0);
-  const regularEnd=eh*60+(em||0);
+  const ws=workStart.split(':').map(Number);
+  const we=workEnd.split(':').map(Number);
+  const regularStart=(Number.isFinite(ws[0])?ws[0]:9)*60+(Number.isFinite(ws[1])?ws[1]:0);
+  const regularEnd=(Number.isFinite(we[0])?we[0]:18)*60+(Number.isFinite(we[1])?we[1]:0);
   let basicPay=0, overPay=0;
   recs.forEach(r=>{
     if(!r.checkIn||!r.checkOut) return;
     let inM=t2m(r.checkIn), outM=t2m(r.checkOut);
+    if(!Number.isFinite(inM)||!Number.isFinite(outM)) return; // 시간 파싱 실패한 레코드는 스킵
     if(outM<=inM) outM+=1440; // 자정 넘김
-    const rate=isWeekend(r.date)?weRate:wdRate;
+    const rate=Number(isWeekend(r.date)?weRate:wdRate)||0;
+    if(!rate) return; // 시급 0이면 누적 안 함 (NaN 차단)
     const totalMins=outM-inM;
-    // 정규시간 윈도우 [regularStart,regularEnd], 다음날 [+1440, +1440] 모두 교집합 합산
     let regularMins=Math.max(0,Math.min(outM,regularEnd)-Math.max(inM,regularStart));
     if(outM>1440) regularMins+=Math.max(0,Math.min(outM,regularEnd+1440)-Math.max(inM,regularStart+1440));
     const overMins=Math.max(0,totalMins-regularMins);
-    const nMins=nightMins(r.checkIn,r.checkOut);
+    const nMins=nightMins(r.checkIn,r.checkOut)||0;
     const normalOver=Math.max(0,overMins-nMins);
-    const nightOver=Math.min(nMins,overMins);
-    overPay+=normalOver/60*rate + nightOver/60*rate*1.5;
+    const nightOver=Math.max(0,Math.min(nMins,overMins));
+    const add = normalOver/60*rate + nightOver/60*rate*1.5;
+    if(Number.isFinite(add)) overPay += add;
   });
   const total=Math.round(overPay);
   return {basicPay:Math.round(basicPay),overPay:Math.round(overPay),total,
