@@ -923,6 +923,12 @@ function goto(s){
     }
     renderNameGrid();
     updateActions();
+    // 시트 기록 자동 sync (자정 넘긴 어제 미완료 출근 인식 위해 필수)
+    if(S.autoSync!==false && S.sheetUrl){
+      loadRecordsFromSheets().then(()=>{
+        renderNameGrid(); updateActions();
+      }).catch(()=>{});
+    }
   }
 }
 
@@ -1489,15 +1495,23 @@ function deleteEditRecord(){
 }
 
 // 시트에서 기록 전체 로드 (관리자 화면 진입 시 자동 호출)
+// 시트에서 받은 date 필드 정규화 (Date 객체 → ISO 문자열로 직렬화된 경우 'YYYY-MM-DD'만 추출)
+function normalizeDate(d){
+  if(!d) return '';
+  const s = String(d);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : s;
+}
+
 async function loadRecordsFromSheets(){
   if(!S.sheetUrl) return;
   // 기존 로컬 오염된 시간 정규화
-  S.records.forEach(x=>{x.checkIn=normalizeTime(x.checkIn);x.checkOut=normalizeTime(x.checkOut);});
+  S.records.forEach(x=>{x.checkIn=normalizeTime(x.checkIn);x.checkOut=normalizeTime(x.checkOut);x.date=normalizeDate(x.date);});
   try{
     const r = await fetch(S.sheetUrl+'?action=getRecords');
     const d = await r.json();
     if(d.records && Array.isArray(d.records)){
-      d.records.forEach(x=>{x.checkIn=normalizeTime(x.checkIn);x.checkOut=normalizeTime(x.checkOut);});
+      d.records.forEach(x=>{x.checkIn=normalizeTime(x.checkIn);x.checkOut=normalizeTime(x.checkOut);x.date=normalizeDate(x.date);});
       // 정보 점수: checkIn/checkOut 있을수록 높음. 많은 정보 쪽 우선.
       const score = x => (x.checkIn?1:0)+(x.checkOut?1:0);
       const key = x => `${x.role}|${x.name}|${x.date}`;
@@ -2468,9 +2482,15 @@ setRole('alba');
 updateAdminSub();
 if(typeof lucide !== 'undefined') lucide.createIcons();
 
-// 공유 링크로 접속한 경우: 시트 자동 로드
+// 공유 링크로 접속한 경우: 시트 자동 로드 (명단 + 기록 모두)
 if(S.sheetUrl && S.autoSync!==false){
   loadFromSheets().catch(()=>{});
+  loadRecordsFromSheets().then(()=>{
+    // 워커 화면이 활성 상태면 UI 갱신 (자정 넘긴 어제 미완료 출근 인식 위해)
+    if(document.getElementById('screen-worker').classList.contains('active')){
+      renderNameGrid(); updateActions();
+    }
+  }).catch(()=>{});
 }
 </script>
 </body>
