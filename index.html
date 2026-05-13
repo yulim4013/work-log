@@ -1229,8 +1229,23 @@ function nowTime(){
 
 // 오염된 시간 문자열 정규화 ("Sat Dec 30 1899..." 등 Date 객체 stringify 결과 → 오전/오후 HH:MM)
 function normalizeTime(t){
+  if(t===0||t==='0') return '오전 12:00';
   if(!t) return '';
   const s=String(t);
+
+  // 한국어 형식 이미 정상이면 그대로 통과 ("오후 2:30")
+  if (/오전|오후/.test(s) && /\d/.test(s)) return s;
+
+  // ISO 시간 추출 (1899-12-30T14:30:00.000Z, T뒤 hh:mm)
+  const iso = s.match(/T(\d{1,2}):(\d{2})/);
+  if (iso) {
+    const h = parseInt(iso[1],10), m = parseInt(iso[2],10);
+    const ampm = h>=12?'오후':'오전';
+    const h12 = h%12||12;
+    return `${ampm} ${h12}:${String(m).padStart(2,'0')}`;
+  }
+
+  // GMT/1899 ISO 변형 - Date 객체로 파싱
   if(s.includes('GMT')||s.includes('1899')){
     try{
       const d=new Date(s);
@@ -1243,6 +1258,18 @@ function normalizeTime(t){
       }
     }catch(e){}
   }
+
+  // 24시간 표기 "14:30" 또는 "14:30:00" → 한국어로 변환
+  const m24 = s.match(/^\s*(\d{1,2})[:：](\d{2})/);
+  if (m24) {
+    const h = parseInt(m24[1],10), m = parseInt(m24[2],10);
+    if (Number.isFinite(h) && Number.isFinite(m) && h<=23 && m<=59) {
+      const ampm = h>=12?'오후':'오전';
+      const h12 = h%12||12;
+      return `${ampm} ${h12}:${String(m).padStart(2,'0')}`;
+    }
+  }
+
   return s;
 }
 
@@ -1532,11 +1559,28 @@ async function loadRecordsFromSheets(){
 //  TIME / DURATION UTILS
 // ════════════════════════════════════════
 function t2m(t){
+  if(t===0||t==='0') return 0;
   if(!t) return 0;
-  let s=t.replace(/오전\s?|오후\s?/g,'');
-  let[h,m]=s.split(':').map(Number);
-  if(t.includes('오후')&&h!==12) h+=12;
-  if(t.includes('오전')&&h===12) h=0;
+  const raw = String(t);
+
+  // ISO 시간 ("1899-12-30T14:30:00.000Z" 등) - T 뒤 hh:mm 추출
+  const iso = raw.match(/T(\d{1,2}):(\d{2})/);
+  if (iso) return (parseInt(iso[1],10)||0)*60 + (parseInt(iso[2],10)||0);
+
+  // 오전/오후 한국어 감지 (공백 변종 무관)
+  const isAM = /오전/.test(raw);
+  const isPM = /오후/.test(raw);
+
+  // 숫자/콜론(ASCII+풀와이드)만 남김. NBSP, BOM, 전각공백 등 모두 제거
+  const cleaned = raw.replace(/[^\d:：]/g,'').replace(/：/g,':');
+  const parts = cleaned.split(':');
+  let h = parseInt(parts[0],10);
+  let m = parseInt(parts[1],10);
+  if (!Number.isFinite(h)) h = 0;
+  if (!Number.isFinite(m)) m = 0;
+
+  if (isPM && h !== 12) h += 12;
+  if (isAM && h === 12) h = 0;
   return h*60+m;
 }
 // 출퇴근 시각 차이(분). 퇴근이 출근보다 이르면 자정 넘김으로 간주해 +24h 보정.
