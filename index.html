@@ -1402,14 +1402,19 @@ function calcDayPay(rec, person){
 // 출퇴근 기록을 시트에 자동 push
 async function syncRecordToSheet(action, rec){
   if(!S.sheetUrl){toast('⚠ 시트 URL 미설정','warn');return;}
-  const body = action === 'add'
-    ? {action:'addRecord', role:rec.role, name:rec.name, date:rec.date,
-       checkIn:rec.checkIn, event:rec.event,
-       payType:rec.payType, rate:rec.rate}
-    : {action:'updateRecord', role:rec.role, name:rec.name, date:rec.date,
-       checkOut:rec.checkOut,
-       hours:rec.hours, basePay:rec.basePay, tax:rec.tax, net:rec.net,
-       basicPay:rec.basicPay, overPay:rec.overPay, nightPay:rec.nightPay};
+  let body;
+  if (action === 'add') {
+    body = {action:'addRecord', role:rec.role, name:rec.name, date:rec.date,
+            checkIn:rec.checkIn, event:rec.event,
+            payType:rec.payType, rate:rec.rate};
+  } else if (action === 'delete') {
+    body = {action:'deleteRecord', role:rec.role, name:rec.name, date:rec.date};
+  } else {
+    body = {action:'updateRecord', role:rec.role, name:rec.name, date:rec.date,
+            checkOut:rec.checkOut,
+            hours:rec.hours, basePay:rec.basePay, tax:rec.tax, net:rec.net,
+            basicPay:rec.basicPay, overPay:rec.overPay, nightPay:rec.nightPay};
+  }
   try{
     const r=await fetch(S.sheetUrl, {method:'POST', body:JSON.stringify(body)});
     const d=await r.json();
@@ -1513,11 +1518,12 @@ function saveEditRecord(){
 function deleteEditRecord(){
   if(!editTarget) return;
   const{role,name,date}=editTarget;
-  if(!confirm(`${name} (${date}) 기록을 삭제하시겠습니까?`)) return;
+  if(!confirm(`${name} (${date}) 기록을 삭제하시겠습니까?\n\n(시트에도 삭제 반영됩니다)`)) return;
   S.records=S.records.filter(r=>!(r.role===role&&r.name===name&&r.date===date));
   save();
   closeEditModal();
   toast(`${name} (${date}) 기록 삭제`,'ok');
+  syncRecordToSheet('delete', {role, name, date});
   renderToday();renderRecords();renderPay();
 }
 

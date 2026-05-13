@@ -121,6 +121,24 @@ function doPost(e) {
     return ok({status: 'not_found'});
   }
 
+  if (body.action === 'deleteRecord') {
+    const sheet = getOrCreate(ss, '기록');
+    ensureRecordHeader(sheet);
+    const values = sheet.getDataRange().getValues();
+    const roleStr = body.role === 'alba' ? '운영요원' : '직원';
+    // 뒤에서부터 순회하여 행 삭제 시 인덱스 어긋남 방지
+    for (let i = values.length - 1; i >= 1; i--) {
+      const sameRole = values[i][0] === roleStr;
+      const sameName = String(values[i][1]).trim() === String(body.name).trim();
+      const sameDate = formatSheetDate(values[i][2]) === body.date;
+      if (sameRole && sameName && sameDate) {
+        sheet.deleteRow(i + 1);
+        return ok({status: 'ok'});
+      }
+    }
+    return ok({status: 'not_found'});
+  }
+
   if (body.action === 'createPayrollSheet') {
     return ok(createPayrollSheet(ss, body));
   }
