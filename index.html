@@ -1545,17 +1545,19 @@ async function loadRecordsFromSheets(){
     const d = await r.json();
     if(d.records && Array.isArray(d.records)){
       d.records.forEach(x=>{x.checkIn=normalizeTime(x.checkIn);x.checkOut=normalizeTime(x.checkOut);x.date=normalizeDate(x.date);});
-      // 정보 점수: checkIn/checkOut 있을수록 높음. 많은 정보 쪽 우선.
-      const score = x => (x.checkIn?1:0)+(x.checkOut?1:0);
+      // 시트 = source of truth. 다른 기기에서 삭제한 기록을 반영하기 위해
+      // 시트에 없는 로컬 기록은 제거. 단, 방금 출근/퇴근한 미동기화 기록(오늘/어제)은
+      // sync 지연 가능성 고려해 보존.
       const key = x => `${x.role}|${x.name}|${x.date}`;
-      const map = new Map();
-      S.records.forEach(x => map.set(key(x), x));
-      d.records.forEach(x => {
-        const k = key(x);
-        const ex = map.get(k);
-        if(!ex || score(x) > score(ex)) map.set(k, x);
+      const sheetKeys = new Set(d.records.map(key));
+      const today = todayKey();
+      const yest = yesterdayKey();
+      const localKeep = S.records.filter(r => {
+        if (sheetKeys.has(key(r))) return false; // 시트 버전이 덮어쓸 것
+        // 시트에 없는 로컬 기록: 오늘 또는 어제 미완료 출근만 보존 (방금 액션)
+        return r.date === today || (r.date === yest && r.checkIn && !r.checkOut);
       });
-      S.records = Array.from(map.values());
+      S.records = [...d.records, ...localKeep];
       save();
     }
   } catch(e){}
